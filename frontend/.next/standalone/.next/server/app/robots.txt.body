@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /student/dashboard/
+
+Sitemap: https://toeflin.my.id/sitemap.xml

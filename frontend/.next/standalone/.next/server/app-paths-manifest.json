@@ -1,0 +1,20 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/dashboard/bank-soal/page": "app/admin/dashboard/bank-soal/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/dashboard/paket-tes/page": "app/admin/dashboard/paket-tes/page.js",
+  "/admin/dashboard/requests/page": "app/admin/dashboard/requests/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/icon.svg/route": "app/icon.svg/route.js",
+  "/page": "app/page.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/route": "app/sitemap.xml/route.js",
+  "/student/certificate/[id]/page": "app/student/certificate/[id]/page.js",
+  "/student/dashboard/history/page": "app/student/dashboard/history/page.js",
+  "/student/dashboard/page": "app/student/dashboard/page.js",
+  "/student/dashboard/tests/page": "app/student/dashboard/tests/page.js",
+  "/student/exam/[id]/page": "app/student/exam/[id]/page.js",
+  "/student/login/page": "app/student/login/page.js",
+  "/student/register/page": "app/student/register/page.js"
+}

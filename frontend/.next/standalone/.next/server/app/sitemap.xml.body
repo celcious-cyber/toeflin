@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>https://toeflin.my.id</loc>
+<lastmod>2026-06-14T16:15:55.784Z</lastmod>
+<changefreq>monthly</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://toeflin.my.id/student/login</loc>
+<lastmod>2026-06-14T16:15:55.784Z</lastmod>
+<changefreq>yearly</changefreq>
+<priority>0.8</priority>
+</url>
+<url>
+<loc>https://toeflin.my.id/student/register</loc>
+<lastmod>2026-06-14T16:15:55.784Z</lastmod>
+<changefreq>yearly</changefreq>
+<priority>0.8</priority>
+</url>
+</urlset>

@@ -1,0 +1,20 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/dashboard/bank-soal/page": "/admin/dashboard/bank-soal",
+  "/admin/dashboard/page": "/admin/dashboard",
+  "/admin/dashboard/paket-tes/page": "/admin/dashboard/paket-tes",
+  "/admin/dashboard/requests/page": "/admin/dashboard/requests",
+  "/admin/login/page": "/admin/login",
+  "/icon.svg/route": "/icon.svg",
+  "/page": "/",
+  "/robots.txt/route": "/robots.txt",
+  "/sitemap.xml/route": "/sitemap.xml",
+  "/student/certificate/[id]/page": "/student/certificate/[id]",
+  "/student/dashboard/history/page": "/student/dashboard/history",
+  "/student/dashboard/page": "/student/dashboard",
+  "/student/dashboard/tests/page": "/student/dashboard/tests",
+  "/student/exam/[id]/page": "/student/exam/[id]",
+  "/student/login/page": "/student/login",
+  "/student/register/page": "/student/register"
+}
