@@ -21,6 +21,17 @@ process.on('unhandledRejection', (reason, promise) => {
   } catch (e) {}
 });
 
+// Override net.Server.prototype.listen to remove any hostname string (e.g. '0.0.0.0' or 'localhost')
+// This forces Node.js to use the port/socket only, allowing Phusion Passenger's hook to intercept it correctly.
+const net = require('net');
+const originalListen = net.Server.prototype.listen;
+net.Server.prototype.listen = function(...args) {
+  if (typeof args[1] === 'string') {
+    args.splice(1, 1); // Remove the hostname argument
+  }
+  return originalListen.apply(this, args);
+};
+
 // Override parseInt temporarily to prevent Next.js from parsing the Unix socket path into NaN.
 const originalParseInt = global.parseInt;
 global.parseInt = function(value, radix) {
