@@ -21,11 +21,11 @@ process.on('unhandledRejection', (reason, promise) => {
   } catch (e) {}
 });
 
-// Override net.Server.prototype.listen to remove any hostname string (e.g. '0.0.0.0' or 'localhost')
+// Override http.Server.prototype.listen to remove any hostname string (e.g. '0.0.0.0' or 'localhost')
 // This forces Node.js to use the port/socket only, allowing Phusion Passenger's hook to intercept it correctly.
-const net = require('net');
-const originalListen = net.Server.prototype.listen;
-net.Server.prototype.listen = function(...args) {
+const http = require('http');
+const originalListen = http.Server.prototype.listen;
+http.Server.prototype.listen = function(...args) {
   if (typeof args[1] === 'string') {
     args.splice(1, 1); // Remove the hostname argument
   }
