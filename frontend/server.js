@@ -1,30 +1,3 @@
-const { createServer } = require('http');
-const { parse } = require('url');
-const next = require('next');
-
-const dev = false;
-const hostname = '0.0.0.0';
-const port = parseInt(process.env.PORT, 10) || 3000;
-
-const app = next({ dev, port });
-const handle = app.getRequestHandler();
-
-app.prepare().then(() => {
-  createServer(async (req, res) => {
-    try {
-      const parsedUrl = parse(req.url, true);
-      await handle(req, res, parsedUrl);
-    } catch (err) {
-      console.error('Error occurred handling', req.url, err);
-      res.statusCode = 500;
-      res.end('internal server error');
-    }
-  })
-    .once('error', (err) => {
-      console.error(err);
-      process.exit(1);
-    })
-    .listen(port, () => {
-      console.log(`> TOEFLin ready on port ${port}`);
-    });
-});
+// This file acts as the entry point for cPanel's Node.js Passenger server
+// It routes the execution directly to the Next.js Standalone build.
+require('./.next/standalone/server.js');
