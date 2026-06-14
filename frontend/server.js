@@ -8,6 +8,19 @@ try {
   // Ignore error
 }
 
+// Catch any asynchronous crashes
+process.on('uncaughtException', (err) => {
+  try {
+    fs.appendFileSync('./port_debug.log', '\nUNCAUGHT EXCEPTION: ' + err.message + '\nSTACK: ' + err.stack);
+  } catch (e) {}
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  try {
+    fs.appendFileSync('./port_debug.log', '\nUNHANDLED REJECTION: ' + (reason instanceof Error ? reason.message + '\nSTACK: ' + reason.stack : reason));
+  } catch (e) {}
+});
+
 // Override parseInt temporarily to prevent Next.js from parsing the Unix socket path into NaN.
 const originalParseInt = global.parseInt;
 global.parseInt = function(value, radix) {
