@@ -1,6 +1,13 @@
 // This file acts as the entry point for cPanel's Node.js Passenger server
 // It routes the execution directly to the Next.js Standalone build.
 
+const fs = require('fs');
+try {
+  fs.writeFileSync('./port_debug.log', 'PORT: ' + process.env.PORT + '\nType: ' + typeof process.env.PORT + '\nTime: ' + new Date().toISOString());
+} catch (e) {
+  // Ignore error
+}
+
 // Override parseInt temporarily to prevent Next.js from parsing the Unix socket path into NaN.
 const originalParseInt = global.parseInt;
 global.parseInt = function(value, radix) {
