@@ -1,3 +1,24 @@
 // This file acts as the entry point for cPanel's Node.js Passenger server
 // It routes the execution directly to the Next.js Standalone build.
+
+// Override parseInt temporarily to prevent Next.js from parsing the Unix socket path into NaN.
+const originalParseInt = global.parseInt;
+global.parseInt = function(value, radix) {
+  if (
+    typeof value === 'string' &&
+    (value.startsWith('/') ||
+      value.startsWith('\\') ||
+      value.includes('.sock') ||
+      value.includes('passenger'))
+  ) {
+    return value;
+  }
+  return originalParseInt(value, radix);
+};
+
+// Require the standalone Next.js server which will execute synchronously
 require('./.next/standalone/server.js');
+
+// Restore parseInt to its original function to prevent side effects
+global.parseInt = originalParseInt;
+
