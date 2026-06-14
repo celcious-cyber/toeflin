@@ -9,6 +9,7 @@ TOEFLin adalah sebuah aplikasi simulasi ujian TOEFL ITP yang dirancang khusus un
 - **Sertifikat PDF Premium**: Peserta yang telah menyelesaikan ujian dapat mengunduh hasil (sertifikat) dalam format PDF berdesain elegan.
 - **Manajemen Bank Soal & Paket Tes**: Akses panel admin untuk mengelola ribuan soal dan merakit paket soal sesuai tingkat kesulitan.
 - **Sistem Pembatasan Ujian Mingguan**: Ujian penuh hanya dapat diambil 1 kali dalam seminggu untuk mendorong belajar mandiri. Mahasiswa dapat meminta akses tambahan (Request) jika diperlukan, yang dapat disetujui melalui Dashboard Admin.
+- **Keamanan CBT (Anti-Cheat)**: Ujian berjalan dalam mode *Full Screen* secara otomatis. Sistem menonaktifkan fitur klik kanan (*Context Menu*), seleksi teks, *Copy-Paste*, serta memblokir kombinasi tombol (F12, Inspect Element, dll) untuk mencegah kecurangan. Ada juga deteksi jika mahasiswa berpindah *tab* atau keluar dari mode layar penuh.
 
 ## 🛠️ Teknologi yang Digunakan
 

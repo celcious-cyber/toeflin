@@ -37,6 +37,66 @@ export default function ExamPage() {
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [requestStatus, setRequestStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR'>('IDLE');
 
+  // Security Measures Effect
+  useEffect(() => {
+    if (!hasStarted || submitted) return;
+
+    // Prevent context menu (right click)
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      alert("⚠️ Tindakan dilarang: Klik kanan dinonaktifkan selama ujian.");
+    };
+
+    // Prevent copy, cut, paste
+    const handleCopyPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      alert("⚠️ Tindakan dilarang: Menyalin/menempel teks dinonaktifkan selama ujian.");
+    };
+
+    // Prevent certain keyboard shortcuts (F12, Ctrl+Shift+I, Ctrl+C, Ctrl+V, etc)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U (Developer Tools & View Source)
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
+        (e.ctrlKey && e.key.toUpperCase() === 'U')
+      ) {
+        e.preventDefault();
+        alert("⚠️ Tindakan dilarang: Akses ke Developer Tools dinonaktifkan.");
+      }
+
+      // Prevent Ctrl+C, Ctrl+V, Ctrl+X
+      if (e.ctrlKey && ['C', 'V', 'X'].includes(e.key.toUpperCase())) {
+        e.preventDefault();
+        alert("⚠️ Tindakan dilarang: Menyalin teks dinonaktifkan.");
+      }
+    };
+
+    // Warn if leaving full screen or window loses focus (optional, but good for CBT)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+         // In a strict CBT, this might auto-submit or record a violation
+         console.warn("User navigated away from the exam tab!");
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopyPaste);
+    document.addEventListener('cut', handleCopyPaste);
+    document.addEventListener('paste', handleCopyPaste);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopyPaste);
+      document.removeEventListener('cut', handleCopyPaste);
+      document.removeEventListener('paste', handleCopyPaste);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [hasStarted, submitted]);
+
   useEffect(() => {
     const fetchQuestions = async () => {
       // Fetch questions
@@ -89,6 +149,21 @@ export default function ExamPage() {
         const attempt = await startRes.json();
         setAttemptId(attempt.id);
         setHasStarted(true);
+        
+        // Request Full Screen
+        try {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) {
+            await docEl.requestFullscreen();
+          } else if ((docEl as any).webkitRequestFullscreen) {
+            await (docEl as any).webkitRequestFullscreen();
+          } else if ((docEl as any).msRequestFullscreen) {
+            await (docEl as any).msRequestFullscreen();
+          }
+        } catch (e) {
+          console.warn("Fullscreen request failed", e);
+        }
+
       } else {
         const errorData = await startRes.json();
         if (errorData.code === 'WEEKLY_LIMIT_REACHED') {
@@ -166,6 +241,15 @@ export default function ExamPage() {
     if (res.ok) {
       setResult(await res.json());
       setSubmitted(true);
+      
+      // Exit fullscreen
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        }
+      } catch (e) {
+        console.warn("Exit fullscreen failed", e);
+      }
     }
     setShowConfirm(false);
   };
@@ -280,7 +364,7 @@ export default function ExamPage() {
             </li>
             <li className="flex gap-3">
               <AlertTriangle size={20} className="text-orange-500 shrink-0" />
-              <span>Pastikan koneksi internet Anda stabil. Jangan menutup atau menyegarkan (refresh) halaman selama ujian berlangsung.</span>
+              <span>Sistem keamanan akan mengunci layar menjadi <b>Mode Penuh (Full Screen)</b>. Klik Kanan, Salin, Tempel (Copy-Paste), dan Inspect Element dinonaktifkan. Pelanggaran dapat membatalkan ujian Anda.</span>
             </li>
             <li className="flex gap-3">
               <Volume2 size={20} className="text-blue-500 shrink-0" />
@@ -451,7 +535,7 @@ export default function ExamPage() {
             {currentQ?.passage && (
               <div className="flex-1 lg:max-w-[50%] glass rounded-2xl p-8 overflow-y-auto max-h-[calc(100vh-8rem)]">
                 {currentQ.passage.title && <h3 className="font-bold text-xl mb-4 font-[family-name:var(--font-outfit)]">{currentQ.passage.title}</h3>}
-                <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed opacity-90">
+                <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed opacity-90 select-none">
                   {currentQ.passage.content}
                 </div>
               </div>
@@ -484,7 +568,7 @@ export default function ExamPage() {
                   </div>
                 )}
 
-                <div className="text-lg leading-relaxed mb-8">{currentQ.content}</div>
+                <div className="text-lg leading-relaxed mb-8 select-none">{currentQ.content}</div>
 
                 <div className="flex flex-col gap-3 flex-1">
                   {currentQ.shuffledEntries?.map(([origKey, val]: [string, any], index: number) => {
