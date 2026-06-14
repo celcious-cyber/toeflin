@@ -23,8 +23,16 @@ global.parseInt = function(value, radix) {
   return originalParseInt(value, radix);
 };
 
-// Require the standalone Next.js server which will execute synchronously
-require('./.next/standalone/server.js');
+// Require the standalone Next.js server with try-catch to debug startup issues
+try {
+  require('./.next/standalone/server.js');
+} catch (err) {
+  try {
+    fs.appendFileSync('./port_debug.log', '\nERROR: ' + err.message + '\nSTACK: ' + err.stack);
+  } catch (e) {
+    // Ignore error
+  }
+}
 
 // Restore parseInt to its original function to prevent side effects
 global.parseInt = originalParseInt;
