@@ -6,7 +6,7 @@ const dev = false;
 const hostname = '0.0.0.0';
 const port = parseInt(process.env.PORT, 10) || 3000;
 
-const app = next({ dev, hostname, port });
+const app = next({ dev, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -25,6 +25,6 @@ app.prepare().then(() => {
       process.exit(1);
     })
     .listen(port, () => {
-      console.log(`> TOEFLin ready on http://${hostname}:${port}`);
+      console.log(`> TOEFLin ready on port ${port}`);
     });
 });
