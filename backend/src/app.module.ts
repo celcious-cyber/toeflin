@@ -32,17 +32,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             password: configService.get<string>('DB_PASSWORD') || '',
             database: configService.get<string>('DB_DATABASE') || 'toeflin',
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: true, // Gunakan migration di production nyata, sync:true untuk kemudahan setup awal
-          };
+            synchronize: true,
+          } as any;
         }
 
         // Fallback default lokal ke SQLite
         return {
-          type: 'sqlite', // Atau 'sqljs' jika sebelumnya pakai sqljs, tapi 'sqlite' lebih umum di Node
+          type: 'sqlite',
           database: 'toefl.sqlite',
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true,
-        };
+        } as any;
       },
     }),
     AuthModule,
