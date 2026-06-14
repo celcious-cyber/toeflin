@@ -36,10 +36,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           } as any;
         }
 
-        // Fallback default lokal ke SQLite
+        // Fallback default lokal ke sql.js (SQLite in pure JS)
         return {
-          type: 'sqlite',
-          database: 'toefl.sqlite',
+          type: 'sqljs',
+          location: 'toefl.sqlite',
+          autoSave: true,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true,
         } as any;
