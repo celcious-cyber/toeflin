@@ -21,6 +21,7 @@ export declare class QuestionsService {
     }>): Promise<Question | null>;
     remove(id: string): Promise<void>;
     findAllPassages(): Promise<Passage[]>;
+    generateTemplate(): Promise<Buffer>;
     importFromExcel(buffer: Buffer, packageId?: string): Promise<any>;
     seed(): Promise<any>;
 }

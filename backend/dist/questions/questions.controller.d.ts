@@ -5,6 +5,7 @@ export declare class QuestionsController {
     constructor(questionsService: QuestionsService);
     findAll(): Promise<Question[]>;
     findAllPassages(): Promise<import("../entities/passage.entity").Passage[]>;
+    downloadTemplate(res: any): Promise<void>;
     findOne(id: string): Promise<Question | null>;
     create(data: Partial<Question>): Promise<Question>;
     update(id: string, data: Partial<Question>): Promise<Question | null>;

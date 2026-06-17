@@ -27,6 +27,15 @@ let QuestionsController = class QuestionsController {
     findAllPassages() {
         return this.questionsService.findAllPassages();
     }
+    async downloadTemplate(res) {
+        const buffer = await this.questionsService.generateTemplate();
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename=template_import_soal.xlsx',
+            'Content-Length': buffer.length,
+        });
+        res.end(buffer);
+    }
     findOne(id) {
         return this.questionsService.findOne(id);
     }
@@ -61,6 +70,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], QuestionsController.prototype, "findAllPassages", null);
+__decorate([
+    (0, common_1.Get)('template'),
+    __param(0, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], QuestionsController.prototype, "downloadTemplate", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

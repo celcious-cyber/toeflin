@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Plus, Upload, Trash2, Edit, Search, FileSpreadsheet, ChevronDown } from 'lucide-react';
+import { Plus, Upload, Trash2, Edit, Search, FileSpreadsheet, ChevronDown, Eye } from 'lucide-react';
 
 interface Question {
   id: string;
@@ -32,6 +32,7 @@ export default function BankSoalPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [packages, setPackages] = useState<TestPackage[]>([]);
   const [passages, setPassages] = useState<Passage[]>([]);
+  const [viewingQuestion, setViewingQuestion] = useState<Question | null>(null);
   const [selectedPackageId, setSelectedPackageId] = useState(''); // For import Excel
   const [search, setSearch] = useState('');
   const [filterSection, setFilterSection] = useState('');
@@ -202,6 +203,26 @@ export default function BankSoalPage() {
             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" />
           </div>
 
+          <button
+            onClick={async () => {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/template`);
+              if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'template_import_soal.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+              } else {
+                alert("Gagal men-download template.");
+              }
+            }}
+            className="btn-hover px-5 py-2.5 glass rounded-xl font-medium flex items-center gap-2 text-sm text-slate-700"
+          >
+            <FileSpreadsheet size={16} /> Download Template
+          </button>
           <label className="btn-hover px-5 py-2.5 glass rounded-xl font-medium cursor-pointer flex items-center gap-2 text-sm">
             <Upload size={16} /> Import Excel
             <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
@@ -273,6 +294,9 @@ export default function BankSoalPage() {
                 <td className="p-4 font-mono uppercase">{q.answerKey}</td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => setViewingQuestion(q)} className="p-2 rounded-lg text-slate-500 hover:bg-slate-500/10 transition-colors" title="Lihat Detail Soal">
+                      <Eye size={16} />
+                    </button>
                     <button onClick={() => openEditModal(q)} className="p-2 rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors">
                       <Edit size={16} />
                     </button>
@@ -406,6 +430,82 @@ export default function BankSoalPage() {
             <div className="flex gap-3 justify-end mt-2">
               <button onClick={() => setShowAddModal(false)} className="px-5 py-2.5 glass rounded-xl font-medium text-sm">Batal</button>
               <button onClick={handleSave} className="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium text-sm">Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {viewingQuestion && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingQuestion(null)}>
+          <div className="glass w-full max-w-lg rounded-3xl p-8 flex flex-col gap-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start">
+              <h2 className="text-xl font-bold font-[family-name:var(--font-outfit)]">Detail Soal</h2>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${viewingQuestion.section === 'Listening' ? 'bg-blue-500/10 text-blue-600' : viewingQuestion.section === 'Structure' ? 'bg-green-500/10 text-green-600' : 'bg-purple-500/10 text-purple-600'}`}>
+                {viewingQuestion.section}
+              </span>
+            </div>
+
+            {viewingQuestion.packageId && (
+              <div className="text-xs bg-orange-500/10 text-orange-600 font-semibold px-3 py-1.5 rounded-xl w-max">
+                Paket: {packages.find(p => p.id === viewingQuestion.packageId)?.name || 'Paket Ujian'}
+              </div>
+            )}
+
+            {viewingQuestion.skillCategory && (
+              <div className="text-xs bg-foreground/5 text-foreground/70 font-semibold px-3 py-1.5 rounded-xl w-max">
+                Skill: {viewingQuestion.skillCategory}
+              </div>
+            )}
+
+            {viewingQuestion.section === 'Listening' && viewingQuestion.audio && (
+              <div className="flex flex-col gap-1 border border-foreground/10 p-3 rounded-xl bg-foreground/[0.02]">
+                <label className="text-xs font-bold opacity-75">Audio Player</label>
+                <audio controls src={viewingQuestion.audio.fileUrl.startsWith('http') ? viewingQuestion.audio.fileUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${viewingQuestion.audio.fileUrl}`} className="w-full mt-1" />
+              </div>
+            )}
+
+            {viewingQuestion.section === 'Reading' && viewingQuestion.passage && (
+              <div className="flex flex-col gap-1 border border-foreground/10 p-4 rounded-xl bg-purple-500/[0.02] max-h-48 overflow-y-auto">
+                <label className="text-xs font-bold text-purple-600">📖 Bacaan: {viewingQuestion.passage.title}</label>
+                <p className="text-xs opacity-80 mt-1 whitespace-pre-line">{viewingQuestion.passage.content}</p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold opacity-75">Pertanyaan</label>
+              <p className="text-sm font-medium text-slate-800 bg-foreground/5 p-3 rounded-xl whitespace-pre-line">{viewingQuestion.content}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold opacity-75">Pilihan Jawaban</label>
+              <div className="grid grid-cols-1 gap-2">
+                {['a', 'b', 'c', 'd'].map(k => {
+                  const isCorrect = viewingQuestion.answerKey.toLowerCase() === k;
+                  return (
+                    <div
+                      key={k}
+                      className={`text-sm p-3 rounded-xl border flex items-center justify-between ${
+                        isCorrect
+                          ? 'bg-green-500/10 border-green-500/30 text-green-700 font-semibold'
+                          : 'bg-foreground/5 border-foreground/5 text-slate-600'
+                      }`}
+                    >
+                      <span>{k.toUpperCase()}. {(viewingQuestion.choices as any)?.[k]}</span>
+                      {isCorrect && <span className="text-[10px] bg-green-500 text-white font-bold px-2 py-0.5 rounded-full uppercase">Kunci</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {viewingQuestion.explanation && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold opacity-75">Pembahasan</label>
+                <p className="text-xs text-slate-600 bg-orange-500/5 border border-orange-500/10 p-3 rounded-xl whitespace-pre-line">{viewingQuestion.explanation}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end mt-2">
+              <button onClick={() => setViewingQuestion(null)} className="px-6 py-2.5 bg-orange-600 text-white rounded-xl font-medium text-sm btn-hover">Tutup</button>
             </div>
           </div>
         </div>

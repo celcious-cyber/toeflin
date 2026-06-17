@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import { Question } from '../entities/question.entity';
 import { Passage } from '../entities/passage.entity';
 import { Audio } from '../entities/audio.entity';
@@ -101,6 +101,103 @@ export class QuestionsService {
     return this.passageRepository.find();
   }
 
+  async generateTemplate(): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Template Import Soal');
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'Section', key: 'section', width: 15 },
+      { header: 'Skill Category', key: 'skillCategory', width: 20 },
+      { header: 'Content', key: 'content', width: 50 },
+      { header: 'Choice A', key: 'choiceA', width: 25 },
+      { header: 'Choice B', key: 'choiceB', width: 25 },
+      { header: 'Choice C', key: 'choiceC', width: 25 },
+      { header: 'Choice D', key: 'choiceD', width: 25 },
+      { header: 'Answer Key', key: 'answerKey', width: 15 },
+      { header: 'Explanation', key: 'explanation', width: 40 },
+      { header: 'Audio URL', key: 'audioUrl', width: 20 },
+      { header: 'Passage Title', key: 'passageTitle', width: 25 },
+      { header: 'Passage Content', key: 'passageContent', width: 60 },
+    ];
+
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFEA580C' }, // Orange 600
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 25;
+
+    // Add some sample data
+    worksheet.addRow({
+      section: 'Listening',
+      skillCategory: 'Part A',
+      content: 'Where is the conversation taking place?',
+      choiceA: 'At a bakery',
+      choiceB: 'In a library',
+      choiceC: 'At a post office',
+      choiceD: 'In a classroom',
+      answerKey: 'B',
+      explanation: 'The speaker mentions checking out books, indicating a library.',
+      audioUrl: '/uploads/example-listening.mp3',
+      passageTitle: '',
+      passageContent: '',
+    });
+
+    worksheet.addRow({
+      section: 'Structure',
+      skillCategory: 'Subject-Verb Agreement',
+      content: 'The committee members _____ disagreeing on the new proposal.',
+      choiceA: 'is',
+      choiceB: 'are',
+      choiceC: 'was',
+      choiceD: 'has',
+      answerKey: 'B',
+      explanation: 'The subject "members" is plural, so we use "are".',
+      audioUrl: '',
+      passageTitle: '',
+      passageContent: '',
+    });
+
+    // Two reading questions sharing the same passage to demonstrate grouping
+    worksheet.addRow({
+      section: 'Reading',
+      skillCategory: 'Main Idea',
+      content: 'What is the main purpose of the TOEFL test?',
+      choiceA: 'To test native speakers',
+      choiceB: 'To measure English ability of non-native speakers',
+      choiceC: 'To teach linguistics',
+      choiceD: 'To enroll in any university',
+      answerKey: 'B',
+      explanation: 'Paragraph 1 mentions it is a standardized test for non-native speakers.',
+      audioUrl: '',
+      passageTitle: 'The History of TOEFL',
+      passageContent: 'The Test of English as a Foreign Language (TOEFL) is a standardized test to measure the English language ability of non-native speakers wishing to enroll in English-speaking universities. The test is accepted by many English-speaking academic and professional institutions.',
+    });
+
+    worksheet.addRow({
+      section: 'Reading',
+      skillCategory: 'Vocabulary',
+      content: 'The word "accepted" in paragraph 1 is closest in meaning to...',
+      choiceA: 'rejected',
+      choiceB: 'approved',
+      choiceC: 'suspected',
+      choiceD: 'ignored',
+      answerKey: 'B',
+      explanation: '"Accepted" here means recognized or approved.',
+      audioUrl: '',
+      passageTitle: 'The History of TOEFL',
+      passageContent: 'The Test of English as a Foreign Language (TOEFL) is a standardized test to measure the English language ability of non-native speakers wishing to enroll in English-speaking universities. The test is accepted by many English-speaking academic and professional institutions.',
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
   async importFromExcel(buffer: Buffer, packageId?: string): Promise<any> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
@@ -128,31 +225,32 @@ export class QuestionsService {
 
     for (const row of rows) {
       const section = row.getCell(1).value?.toString() || '';
-      const skillCategory = row.getCell(2).value?.toString();
+      const skillCategory = row.getCell(2).value?.toString() || undefined;
       const content = row.getCell(3).value?.toString() || '';
       const choiceA = row.getCell(4).value?.toString() || '';
       const choiceB = row.getCell(5).value?.toString() || '';
       const choiceC = row.getCell(6).value?.toString() || '';
       const choiceD = row.getCell(7).value?.toString() || '';
       const answerKey = row.getCell(8).value?.toString() || '';
-      const explanation = row.getCell(9).value?.toString();
+      const explanation = row.getCell(9).value?.toString() || undefined;
       const audioUrl = row.getCell(10).value?.toString()?.trim();
       const passageTitle = row.getCell(11).value?.toString()?.trim();
       const passageContent = row.getCell(12).value?.toString()?.trim();
 
-      let audio: Audio | undefined;
+      let audio: Audio | null = null;
       if (audioUrl) {
         const audioKey = audioUrl.toLowerCase();
-        if (audioMap.has(audioKey)) {
-          audio = audioMap.get(audioKey);
+        const existingAudio = audioMap.get(audioKey);
+        if (existingAudio) {
+          audio = existingAudio;
         } else {
-          audio = this.audioRepository.create({ fileUrl: audioUrl });
-          audio = await this.audioRepository.save(audio);
+          const newAudio = this.audioRepository.create({ fileUrl: audioUrl });
+          audio = await this.audioRepository.save(newAudio);
           audioMap.set(audioKey, audio);
         }
       }
 
-      let passage: Passage | undefined;
+      let passage: Passage | null = null;
       if (passageTitle) {
         const passageKey = passageTitle.toLowerCase();
         const existingPassage = passageMap.get(passageKey);
@@ -173,7 +271,7 @@ export class QuestionsService {
         }
       }
 
-      const question = this.questionRepository.create({
+      const questionData: any = {
         section,
         skillCategory,
         content,
@@ -188,8 +286,9 @@ export class QuestionsService {
         packageId: packageId || null,
         audioId: audio ? audio.id : null,
         passageId: passage ? passage.id : null,
-      });
+      };
 
+      const question = this.questionRepository.create(questionData as DeepPartial<Question>);
       questionsToSave.push(question);
     }
 

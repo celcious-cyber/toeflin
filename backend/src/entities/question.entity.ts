@@ -28,21 +28,21 @@ export class Question {
 
   @ManyToOne(() => Audio, { nullable: true })
   @JoinColumn({ name: 'audioId' })
-  audio: Audio;
+  audio: Audio | null;
 
   @Column({ nullable: true })
   audioId: string | null;
 
   @ManyToOne(() => Passage, { nullable: true })
   @JoinColumn({ name: 'passageId' })
-  passage: Passage;
+  passage: Passage | null;
 
   @Column({ nullable: true })
   passageId: string | null;
 
   @ManyToOne(() => TestPackage, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'packageId' })
-  package: TestPackage;
+  package: TestPackage | null;
 
   @Column({ nullable: true })
   packageId: string | null;

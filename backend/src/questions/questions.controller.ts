@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseInterceptors, UploadedFile, Query, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { QuestionsService } from './questions.service';
 import { Question } from '../entities/question.entity';
@@ -15,6 +15,17 @@ export class QuestionsController {
   @Get('passages')
   findAllPassages() {
     return this.questionsService.findAllPassages();
+  }
+
+  @Get('template')
+  async downloadTemplate(@Res() res: any) {
+    const buffer = await this.questionsService.generateTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename=template_import_soal.xlsx',
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Get(':id')

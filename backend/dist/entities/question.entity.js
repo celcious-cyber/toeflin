@@ -61,7 +61,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.ManyToOne)(() => audio_entity_1.Audio, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'audioId' }),
-    __metadata("design:type", audio_entity_1.Audio)
+    __metadata("design:type", Object)
 ], Question.prototype, "audio", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
@@ -70,7 +70,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.ManyToOne)(() => passage_entity_1.Passage, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'passageId' }),
-    __metadata("design:type", passage_entity_1.Passage)
+    __metadata("design:type", Object)
 ], Question.prototype, "passage", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
@@ -79,7 +79,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.ManyToOne)(() => test_package_entity_1.TestPackage, { nullable: true, onDelete: 'SET NULL' }),
     (0, typeorm_1.JoinColumn)({ name: 'packageId' }),
-    __metadata("design:type", test_package_entity_1.TestPackage)
+    __metadata("design:type", Object)
 ], Question.prototype, "package", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),

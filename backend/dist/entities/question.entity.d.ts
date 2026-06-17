@@ -9,10 +9,10 @@ export declare class Question {
     choices: any;
     answerKey: string;
     explanation: string;
-    audio: Audio;
+    audio: Audio | null;
     audioId: string | null;
-    passage: Passage;
+    passage: Passage | null;
     passageId: string | null;
-    package: TestPackage;
+    package: TestPackage | null;
     packageId: string | null;
 }
