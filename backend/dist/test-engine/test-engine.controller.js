@@ -36,6 +36,9 @@ let TestEngineController = class TestEngineController {
     getUserAttempts(userId) {
         return this.testEngineService.getUserAttempts(userId);
     }
+    getQuestionsForPackage(packageId) {
+        return this.testEngineService.getQuestionsForPackage(packageId);
+    }
     getRequests() {
         return this.testEngineService.getRequests();
     }
@@ -80,6 +83,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], TestEngineController.prototype, "getUserAttempts", null);
+__decorate([
+    (0, common_1.Get)('packages/:packageId/questions'),
+    __param(0, (0, common_1.Param)('packageId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], TestEngineController.prototype, "getQuestionsForPackage", null);
 __decorate([
     (0, common_1.Get)('requests'),
     __metadata("design:type", Function),

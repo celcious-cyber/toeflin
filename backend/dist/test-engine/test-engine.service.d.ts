@@ -17,6 +17,7 @@ export declare class TestEngineService {
     }>;
     submitTest(attemptId: string): Promise<TestAttempt>;
     getUserAttempts(userId: string): Promise<TestAttempt[]>;
+    getQuestionsForPackage(packageId: string): Promise<any[]>;
     requestAttempt(userId: string, packageId: string): Promise<TestRequest>;
     getRequests(): Promise<TestRequest[]>;
     updateRequestStatus(id: string, status: RequestStatus): Promise<TestRequest>;

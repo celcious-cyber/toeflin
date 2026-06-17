@@ -155,6 +155,53 @@ let TestEngineService = class TestEngineService {
             order: { date: 'DESC' },
         });
     }
+    async getQuestionsForPackage(packageId) {
+        const pkg = await this.pkgRepo.findOne({ where: { id: packageId } });
+        if (!pkg)
+            throw new common_1.BadRequestException('Package not found');
+        let questionsList = [];
+        if (pkg.questions && (pkg.questions.listening?.length || pkg.questions.structure?.length || pkg.questions.reading?.length)) {
+            const allIds = [
+                ...(pkg.questions.listening || []),
+                ...(pkg.questions.structure || []),
+                ...(pkg.questions.reading || []),
+            ];
+            if (allIds.length > 0) {
+                questionsList = await this.questionRepo.createQueryBuilder('question')
+                    .where('question.id IN (:...allIds)', { allIds })
+                    .leftJoinAndSelect('question.passage', 'passage')
+                    .leftJoinAndSelect('question.audio', 'audio')
+                    .getMany();
+            }
+        }
+        else {
+            questionsList = await this.questionRepo.find({
+                relations: { passage: true, audio: true }
+            });
+        }
+        const sectionOrder = { 'Listening': 1, 'Structure': 2, 'Reading': 3 };
+        questionsList.sort((a, b) => {
+            const orderA = sectionOrder[a.section] || 99;
+            const orderB = sectionOrder[b.section] || 99;
+            return orderA - orderB;
+        });
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+        return questionsList.map(q => {
+            const { answerKey, ...cleanQuestion } = q;
+            const choicesEntries = Object.entries(q.choices || {});
+            const shuffledEntries = shuffleArray(choicesEntries);
+            return {
+                ...cleanQuestion,
+                shuffledEntries,
+            };
+        });
+    }
     async requestAttempt(userId, packageId) {
         const existingReq = await this.reqRepo.findOne({
             where: { userId, packageId, status: test_request_entity_1.RequestStatus.PENDING },

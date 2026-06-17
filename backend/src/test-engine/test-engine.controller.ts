@@ -31,6 +31,11 @@ export class TestEngineController {
     return this.testEngineService.getUserAttempts(userId);
   }
 
+  @Get('packages/:packageId/questions')
+  getQuestionsForPackage(@Param('packageId') packageId: string) {
+    return this.testEngineService.getQuestionsForPackage(packageId);
+  }
+
   @Get('requests')
   getRequests() {
     return this.testEngineService.getRequests();

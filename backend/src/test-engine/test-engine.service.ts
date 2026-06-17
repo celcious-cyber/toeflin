@@ -156,6 +156,67 @@ export class TestEngineService {
     });
   }
 
+  async getQuestionsForPackage(packageId: string) {
+    const pkg = await this.pkgRepo.findOne({ where: { id: packageId } });
+    if (!pkg) throw new BadRequestException('Package not found');
+
+    let questionsList: Question[] = [];
+
+    // If package has specified question IDs
+    if (pkg.questions && (pkg.questions.listening?.length || pkg.questions.structure?.length || pkg.questions.reading?.length)) {
+      const allIds = [
+        ...(pkg.questions.listening || []),
+        ...(pkg.questions.structure || []),
+        ...(pkg.questions.reading || []),
+      ];
+      if (allIds.length > 0) {
+        questionsList = await this.questionRepo.createQueryBuilder('question')
+          .where('question.id IN (:...allIds)', { allIds })
+          .leftJoinAndSelect('question.passage', 'passage')
+          .leftJoinAndSelect('question.audio', 'audio')
+          .getMany();
+      }
+    } else {
+      // Fallback: get all questions if package has no specified questions
+      questionsList = await this.questionRepo.find({
+        relations: { passage: true, audio: true }
+      });
+    }
+
+    // Sort questions by TOEFL section order: Listening, Structure, Reading
+    const sectionOrder: Record<string, number> = { 'Listening': 1, 'Structure': 2, 'Reading': 3 };
+    questionsList.sort((a, b) => {
+      const orderA = sectionOrder[a.section] || 99;
+      const orderB = sectionOrder[b.section] || 99;
+      return orderA - orderB;
+    });
+
+    // Process questions:
+    // 1. STRIP answerKey for client security
+    // 2. Shuffle choices dynamically on the backend
+    const shuffleArray = (array: any[]) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    };
+
+    return questionsList.map(q => {
+      // Create a shallow copy and remove answerKey
+      const { answerKey, ...cleanQuestion } = q as any;
+      
+      // Shuffle choices and create shuffled entries
+      const choicesEntries = Object.entries(q.choices || {});
+      const shuffledEntries = shuffleArray(choicesEntries);
+
+      return {
+        ...cleanQuestion,
+        shuffledEntries,
+      };
+    });
+  }
+
   async requestAttempt(userId: string, packageId: string) {
     const existingReq = await this.reqRepo.findOne({
       where: { userId, packageId, status: RequestStatus.PENDING },

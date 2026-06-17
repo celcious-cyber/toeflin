@@ -19,6 +19,7 @@ export declare class TestEngineController {
         packageId: string;
     }): Promise<import("../entities/test-request.entity").TestRequest>;
     getUserAttempts(userId: string): Promise<import("../entities/test-attempt.entity").TestAttempt[]>;
+    getQuestionsForPackage(packageId: string): Promise<any[]>;
     getRequests(): Promise<import("../entities/test-request.entity").TestRequest[]>;
     updateRequestStatus(id: string, status: RequestStatus): Promise<import("../entities/test-request.entity").TestRequest>;
 }

@@ -99,32 +99,10 @@ export default function ExamPage() {
 
   useEffect(() => {
     const fetchQuestions = async () => {
-      // Fetch questions
-      const qRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`);
+      // Fetch sorted, shuffled, and secured questions from the package endpoint
+      const qRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/packages/${packageId}/questions`);
       if (qRes.ok) {
-        const allQuestions = await qRes.json();
-        // Sort questions by TOEFL section order
-        const sectionOrder: Record<string, number> = { 'Listening': 1, 'Structure': 2, 'Reading': 3 };
-        allQuestions.sort((a: any, b: any) => {
-           const orderA = sectionOrder[a.section] || 99;
-           const orderB = sectionOrder[b.section] || 99;
-           return orderA - orderB;
-        });
-
-        // Shuffle choices for each question so it's randomized per student
-        const shuffleArray = (array: any[]) => {
-          for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-          }
-          return array;
-        };
-
-        const processedQuestions = allQuestions.map((q: any) => ({
-          ...q,
-          shuffledEntries: shuffleArray(Object.entries(q.choices))
-        }));
-
+        const processedQuestions = await qRes.json();
         setQuestions(processedQuestions);
       }
     };
