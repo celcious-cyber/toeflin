@@ -162,8 +162,14 @@ export class TestEngineService {
 
     let questionsList: Question[] = [];
 
-    // If package has specified question IDs
-    if (pkg.questions && (pkg.questions.listening?.length || pkg.questions.structure?.length || pkg.questions.reading?.length)) {
+    // 1. Try to find questions directly associated with this package via packageId
+    questionsList = await this.questionRepo.find({
+      where: { packageId: packageId },
+      relations: { passage: true, audio: true }
+    });
+
+    // 2. If no questions are found, check if there are specific IDs in JSON pkg.questions
+    if (questionsList.length === 0 && pkg.questions && (pkg.questions.listening?.length || pkg.questions.structure?.length || pkg.questions.reading?.length)) {
       const allIds = [
         ...(pkg.questions.listening || []),
         ...(pkg.questions.structure || []),
@@ -176,9 +182,12 @@ export class TestEngineService {
           .leftJoinAndSelect('question.audio', 'audio')
           .getMany();
       }
-    } else {
-      // Fallback: get all questions if package has no specified questions
+    }
+
+    // 3. Fallback: If still no questions, get all general questions (where packageId is null)
+    if (questionsList.length === 0) {
       questionsList = await this.questionRepo.find({
+        where: { packageId: null },
         relations: { passage: true, audio: true }
       });
     }

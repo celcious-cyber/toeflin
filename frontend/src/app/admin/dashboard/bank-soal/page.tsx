@@ -10,17 +10,26 @@ interface Question {
   choices: { a: string; b: string; c: string; d: string };
   answerKey: string;
   explanation?: string;
+  packageId?: string;
+}
+
+interface TestPackage {
+  id: string;
+  name: string;
+  type: string;
 }
 
 export default function BankSoalPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [packages, setPackages] = useState<TestPackage[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState(''); // For import Excel
   const [search, setSearch] = useState('');
   const [filterSection, setFilterSection] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [importMsg, setImportMsg] = useState('');
 
-  const [form, setForm] = useState<Partial<Question>>({
-    section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: ''
+  const [form, setForm] = useState<Partial<Question & { packageId: string }>>({
+    section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: ''
   });
 
   const fetchQuestions = async () => {
@@ -28,14 +37,26 @@ export default function BankSoalPage() {
     if (res.ok) setQuestions(await res.json());
   };
 
-  useEffect(() => { fetchQuestions(); }, []);
+  const fetchPackages = async () => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-packages`);
+    if (res.ok) setPackages(await res.json());
+  };
+
+  useEffect(() => {
+    fetchQuestions();
+    fetchPackages();
+  }, []);
 
   const handleAdd = async () => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
     });
-    if (res.ok) { setShowAddModal(false); fetchQuestions(); setForm({ section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a' }); }
+    if (res.ok) {
+      setShowAddModal(false);
+      fetchQuestions();
+      setForm({ section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '' });
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -48,7 +69,13 @@ export default function BankSoalPage() {
     if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/import`, { method: 'POST', body: fd });
+    
+    const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/import`);
+    if (selectedPackageId) {
+      url.searchParams.append('packageId', selectedPackageId);
+    }
+    
+    const res = await fetch(url.toString(), { method: 'POST', body: fd });
     if (res.ok) {
       const data = await res.json();
       setImportMsg(`Berhasil import ${data.importedCount} soal!`);
@@ -69,7 +96,21 @@ export default function BankSoalPage() {
           <h1 className="text-3xl font-bold font-[family-name:var(--font-outfit)]">Bank Soal</h1>
           <p className="opacity-70 mt-1">{questions.length} soal tersedia</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="relative">
+            <select
+              value={selectedPackageId}
+              onChange={e => setSelectedPackageId(e.target.value)}
+              className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-orange-500/30 text-sm font-semibold text-slate-700"
+            >
+              <option value="">Latihan Umum (Tanpa Paket)</option>
+              {packages.filter(p => p.type === 'Full Test').map(p => (
+                <option key={p.id} value={p.id}>Target: {p.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" />
+          </div>
+
           <label className="btn-hover px-5 py-2.5 glass rounded-xl font-medium cursor-pointer flex items-center gap-2 text-sm">
             <Upload size={16} /> Import Excel
             <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
@@ -103,6 +144,7 @@ export default function BankSoalPage() {
           <thead className="bg-foreground/5">
             <tr>
               <th className="text-left p-4 font-semibold">Section</th>
+              <th className="text-left p-4 font-semibold">Paket</th>
               <th className="text-left p-4 font-semibold">Konten Soal</th>
               <th className="text-left p-4 font-semibold">Jawaban</th>
               <th className="text-right p-4 font-semibold">Aksi</th>
@@ -110,7 +152,7 @@ export default function BankSoalPage() {
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center opacity-50">
+              <tr><td colSpan={5} className="p-8 text-center opacity-50">
                 <FileSpreadsheet size={32} className="mx-auto mb-2 opacity-30" />
                 Belum ada soal. Tambahkan atau import dari Excel.
               </td></tr>
@@ -118,6 +160,17 @@ export default function BankSoalPage() {
             {filtered.map(q => (
               <tr key={q.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02] transition-colors">
                 <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${q.section === 'Listening' ? 'bg-blue-500/10 text-blue-600' : q.section === 'Structure' ? 'bg-green-500/10 text-green-600' : 'bg-purple-500/10 text-purple-600'}`}>{q.section}</span></td>
+                <td className="p-4">
+                  {q.packageId ? (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-600 font-semibold">
+                      {packages.find(p => p.id === q.packageId)?.name || 'Paket Ujian'}
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-medium">
+                      Latihan Umum
+                    </span>
+                  )}
+                </td>
                 <td className="p-4 max-w-sm truncate">{q.content}</td>
                 <td className="p-4 font-mono uppercase">{q.answerKey}</td>
                 <td className="p-4 text-right">
@@ -137,6 +190,16 @@ export default function BankSoalPage() {
               <option value="Listening">Listening</option>
               <option value="Structure">Structure</option>
               <option value="Reading">Reading</option>
+            </select>
+            <select
+              value={form.packageId || ''}
+              onChange={e => setForm({ ...form, packageId: e.target.value })}
+              className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm"
+            >
+              <option value="">Latihan Umum (Tanpa Paket)</option>
+              {packages.filter(p => p.type === 'Full Test').map(p => (
+                <option key={p.id} value={p.id}>Target: {p.name}</option>
+              ))}
             </select>
             <textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Konten soal..." rows={3} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm resize-none" />
             <div className="grid grid-cols-2 gap-3">

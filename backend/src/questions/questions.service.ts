@@ -36,7 +36,7 @@ export class QuestionsService {
     await this.questionRepository.delete(id);
   }
 
-  async importFromExcel(buffer: Buffer): Promise<any> {
+  async importFromExcel(buffer: Buffer, packageId?: string): Promise<any> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
     const worksheet = workbook.worksheets[0];
@@ -57,6 +57,7 @@ export class QuestionsService {
         },
         answerKey: row.getCell(8).value?.toString() || '',
         explanation: row.getCell(9).value?.toString(),
+        packageId: packageId || null,
       });
       questionsToSave.push(question);
     });

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { QuestionsService } from './questions.service';
 import { Question } from '../entities/question.entity';
@@ -34,9 +34,9 @@ export class QuestionsController {
 
   @Post('import')
   @UseInterceptors(FileInterceptor('file'))
-  async importExcel(@UploadedFile() file: any) {
+  async importExcel(@UploadedFile() file: any, @Query('packageId') packageId?: string) {
     if (!file) throw new Error('File is required');
-    return this.questionsService.importFromExcel(file.buffer);
+    return this.questionsService.importFromExcel(file.buffer, packageId);
   }
 
   @Post('seed')

@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Passage } from './passage.entity';
 import { Audio } from './audio.entity';
+import { TestPackage } from './test-package.entity';
 
 @Entity('questions')
 export class Question {
@@ -38,4 +39,11 @@ export class Question {
 
   @Column({ nullable: true })
   passageId: string;
+
+  @ManyToOne(() => TestPackage, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'packageId' })
+  package: TestPackage;
+
+  @Column({ nullable: true })
+  packageId: string;
 }
