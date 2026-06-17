@@ -3,7 +3,7 @@
   "config": {
     "env": {},
     "typescript": {
-      "ignoreBuildErrors": false
+      "ignoreBuildErrors": true
     },
     "typedRoutes": false,
     "distDir": ".next",
@@ -104,7 +104,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/home/localmar/toeflin.my.id/frontend",
+    "outputFileTracingRoot": "/home/u118737573/domains/ruangweb.my.id/nodejs/frontend",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -304,11 +304,11 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "/home/localmar/toeflin.my.id/frontend"
+      "root": "/home/u118737573/domains/ruangweb.my.id/nodejs/frontend"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "/home/localmar/toeflin.my.id/frontend",
+  "appDir": "/home/u118737573/domains/ruangweb.my.id/nodejs/frontend",
   "relativeAppDir": "",
   "files": [
     ".next/package.json",

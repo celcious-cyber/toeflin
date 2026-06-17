@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // @ts-expect-error turbopack config is required when custom webpack configs are present
+  turbopack: {},
 };
 
 export default withPWA(nextConfig);
