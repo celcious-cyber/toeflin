@@ -20,16 +20,19 @@ const test_attempt_entity_1 = require("../entities/test-attempt.entity");
 const test_package_entity_1 = require("../entities/test-package.entity");
 const score_conversion_entity_1 = require("../entities/score-conversion.entity");
 const test_request_entity_1 = require("../entities/test-request.entity");
+const question_entity_1 = require("../entities/question.entity");
 let TestEngineService = class TestEngineService {
     attemptRepo;
     pkgRepo;
     scoreRepo;
     reqRepo;
-    constructor(attemptRepo, pkgRepo, scoreRepo, reqRepo) {
+    questionRepo;
+    constructor(attemptRepo, pkgRepo, scoreRepo, reqRepo, questionRepo) {
         this.attemptRepo = attemptRepo;
         this.pkgRepo = pkgRepo;
         this.scoreRepo = scoreRepo;
         this.reqRepo = reqRepo;
+        this.questionRepo = questionRepo;
     }
     async startTest(userId, packageId) {
         const pkg = await this.pkgRepo.findOne({ where: { id: packageId } });
@@ -75,9 +78,73 @@ let TestEngineService = class TestEngineService {
         const attempt = await this.attemptRepo.findOne({ where: { id: attemptId } });
         if (!attempt)
             throw new common_1.BadRequestException('Attempt not found');
-        attempt.rawScores = { listening: 30, structure: 25, reading: 40 };
-        attempt.scaledScores = { listening: 50, structure: 45, reading: 55 };
-        attempt.totalScore = Math.round(((50 + 45 + 55) / 3) * 10);
+        const allQuestions = await this.questionRepo.find();
+        const questionsMap = new Map();
+        allQuestions.forEach(q => {
+            questionsMap.set(q.id, q);
+        });
+        const answers = attempt.answers || {};
+        let correctListening = 0;
+        let correctStructure = 0;
+        let correctReading = 0;
+        let totalListening = 0;
+        let totalStructure = 0;
+        let totalReading = 0;
+        allQuestions.forEach(q => {
+            const sec = q.section.toLowerCase();
+            if (sec === 'listening')
+                totalListening++;
+            else if (sec === 'structure')
+                totalStructure++;
+            else if (sec === 'reading')
+                totalReading++;
+        });
+        Object.entries(answers).forEach(([qId, val]) => {
+            const question = questionsMap.get(qId);
+            if (question) {
+                const isCorrect = val && question.answerKey && val.toString().trim().toLowerCase() === question.answerKey.toString().trim().toLowerCase();
+                const sec = question.section.toLowerCase();
+                if (sec === 'listening') {
+                    if (isCorrect)
+                        correctListening++;
+                }
+                else if (sec === 'structure') {
+                    if (isCorrect)
+                        correctStructure++;
+                }
+                else if (sec === 'reading') {
+                    if (isCorrect)
+                        correctReading++;
+                }
+            }
+        });
+        attempt.rawScores = {
+            listening: correctListening,
+            structure: correctStructure,
+            reading: correctReading,
+        };
+        const getScaled = async (sectionName, rawScore, totalQuestions, isReading) => {
+            const dbConversion = await this.scoreRepo.findOne({
+                where: { section: sectionName, rawScore: rawScore }
+            });
+            if (dbConversion) {
+                return dbConversion.scaledScore;
+            }
+            if (totalQuestions <= 0)
+                return 31;
+            const maxScaled = isReading ? 67 : 68;
+            const minScaled = 31;
+            return Math.round(minScaled + (rawScore / totalQuestions) * (maxScaled - minScaled));
+        };
+        const scaledListening = await getScaled('Listening', correctListening, totalListening, false);
+        const scaledStructure = await getScaled('Structure', correctStructure, totalStructure, false);
+        const scaledReading = await getScaled('Reading', correctReading, totalReading, true);
+        attempt.scaledScores = {
+            listening: scaledListening,
+            structure: scaledStructure,
+            reading: scaledReading,
+        };
+        attempt.totalScore = Math.round(((scaledListening + scaledStructure + scaledReading) / 3) * 10);
         await this.attemptRepo.save(attempt);
         return attempt;
     }
@@ -109,7 +176,9 @@ exports.TestEngineService = TestEngineService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(test_package_entity_1.TestPackage)),
     __param(2, (0, typeorm_1.InjectRepository)(score_conversion_entity_1.ScoreConversion)),
     __param(3, (0, typeorm_1.InjectRepository)(test_request_entity_1.TestRequest)),
+    __param(4, (0, typeorm_1.InjectRepository)(question_entity_1.Question)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])

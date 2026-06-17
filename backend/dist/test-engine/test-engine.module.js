@@ -13,6 +13,7 @@ const test_attempt_entity_1 = require("../entities/test-attempt.entity");
 const test_package_entity_1 = require("../entities/test-package.entity");
 const score_conversion_entity_1 = require("../entities/score-conversion.entity");
 const test_request_entity_1 = require("../entities/test-request.entity");
+const question_entity_1 = require("../entities/question.entity");
 const test_engine_service_1 = require("./test-engine.service");
 const test_engine_controller_1 = require("./test-engine.controller");
 let TestEngineModule = class TestEngineModule {
@@ -20,7 +21,7 @@ let TestEngineModule = class TestEngineModule {
 exports.TestEngineModule = TestEngineModule;
 exports.TestEngineModule = TestEngineModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([test_attempt_entity_1.TestAttempt, test_package_entity_1.TestPackage, score_conversion_entity_1.ScoreConversion, test_request_entity_1.TestRequest])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([test_attempt_entity_1.TestAttempt, test_package_entity_1.TestPackage, score_conversion_entity_1.ScoreConversion, test_request_entity_1.TestRequest, question_entity_1.Question])],
         providers: [test_engine_service_1.TestEngineService],
         controllers: [test_engine_controller_1.TestEngineController],
     })

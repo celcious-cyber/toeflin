@@ -5,6 +5,7 @@ import { TestAttempt } from '../entities/test-attempt.entity';
 import { TestPackage } from '../entities/test-package.entity';
 import { ScoreConversion } from '../entities/score-conversion.entity';
 import { TestRequest, RequestStatus } from '../entities/test-request.entity';
+import { Question } from '../entities/question.entity';
 
 @Injectable()
 export class TestEngineService {
@@ -13,6 +14,7 @@ export class TestEngineService {
     @InjectRepository(TestPackage) private pkgRepo: Repository<TestPackage>,
     @InjectRepository(ScoreConversion) private scoreRepo: Repository<ScoreConversion>,
     @InjectRepository(TestRequest) private reqRepo: Repository<TestRequest>,
+    @InjectRepository(Question) private questionRepo: Repository<Question>,
   ) {}
 
   async startTest(userId: string, packageId: string) {
@@ -64,11 +66,83 @@ export class TestEngineService {
     const attempt = await this.attemptRepo.findOne({ where: { id: attemptId } });
     if (!attempt) throw new BadRequestException('Attempt not found');
     
-    // TODO: implement actual scoring logic mapping questions to answerKey
-    // Mock processing for MVP:
-    attempt.rawScores = { listening: 30, structure: 25, reading: 40 };
-    attempt.scaledScores = { listening: 50, structure: 45, reading: 55 };
-    attempt.totalScore = Math.round(((50 + 45 + 55) / 3) * 10);
+    const allQuestions = await this.questionRepo.find();
+    
+    // Group all questions by ID
+    const questionsMap = new Map<string, Question>();
+    allQuestions.forEach(q => {
+      questionsMap.set(q.id, q);
+    });
+
+    const answers = attempt.answers || {};
+    
+    let correctListening = 0;
+    let correctStructure = 0;
+    let correctReading = 0;
+
+    let totalListening = 0;
+    let totalStructure = 0;
+    let totalReading = 0;
+
+    // Count total questions in each section from database
+    allQuestions.forEach(q => {
+      const sec = q.section.toLowerCase();
+      if (sec === 'listening') totalListening++;
+      else if (sec === 'structure') totalStructure++;
+      else if (sec === 'reading') totalReading++;
+    });
+
+    // Check student's answers
+    Object.entries(answers).forEach(([qId, val]: [string, any]) => {
+      const question = questionsMap.get(qId);
+      if (question) {
+        const isCorrect = val && question.answerKey && val.toString().trim().toLowerCase() === question.answerKey.toString().trim().toLowerCase();
+        
+        const sec = question.section.toLowerCase();
+        if (sec === 'listening') {
+          if (isCorrect) correctListening++;
+        } else if (sec === 'structure') {
+          if (isCorrect) correctStructure++;
+        } else if (sec === 'reading') {
+          if (isCorrect) correctReading++;
+        }
+      }
+    });
+
+    // Save raw scores
+    attempt.rawScores = {
+      listening: correctListening,
+      structure: correctStructure,
+      reading: correctReading,
+    };
+
+    // Calculate scaled scores
+    const getScaled = async (sectionName: string, rawScore: number, totalQuestions: number, isReading: boolean): Promise<number> => {
+      const dbConversion = await this.scoreRepo.findOne({
+        where: { section: sectionName, rawScore: rawScore }
+      });
+      if (dbConversion) {
+        return dbConversion.scaledScore;
+      }
+      
+      // Fallback calculation:
+      if (totalQuestions <= 0) return 31;
+      const maxScaled = isReading ? 67 : 68;
+      const minScaled = 31;
+      return Math.round(minScaled + (rawScore / totalQuestions) * (maxScaled - minScaled));
+    };
+
+    const scaledListening = await getScaled('Listening', correctListening, totalListening, false);
+    const scaledStructure = await getScaled('Structure', correctStructure, totalStructure, false);
+    const scaledReading = await getScaled('Reading', correctReading, totalReading, true);
+
+    attempt.scaledScores = {
+      listening: scaledListening,
+      structure: scaledStructure,
+      reading: scaledReading,
+    };
+
+    attempt.totalScore = Math.round(((scaledListening + scaledStructure + scaledReading) / 3) * 10);
     
     await this.attemptRepo.save(attempt);
     return attempt;
