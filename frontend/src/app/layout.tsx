@@ -20,8 +20,8 @@ export const metadata: Metadata = {
   authors: [{ name: "Universitas Cordova" }],
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/favicon.svg?v=2",
+    apple: "/favicon.svg?v=2",
   },
   openGraph: {
     title: "TOEFLin Undova - Platform Simulasi TOEFL ITP",
