@@ -1,22 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Outfit, Roboto } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-});
-
-const roboto = Roboto({
-  weight: ['400', '500', '700'],
-  variable: "--font-roboto",
-  subsets: ["latin"],
-});
+const inter = { variable: "font-inter" };
+const outfit = { variable: "font-outfit" };
+const roboto = { variable: "font-roboto" };
 
 export const viewport: Viewport = {
   themeColor: "#1d4ed8",
