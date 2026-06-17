@@ -160,7 +160,11 @@ let TestEngineService = class TestEngineService {
         if (!pkg)
             throw new common_1.BadRequestException('Package not found');
         let questionsList = [];
-        if (pkg.questions && (pkg.questions.listening?.length || pkg.questions.structure?.length || pkg.questions.reading?.length)) {
+        questionsList = await this.questionRepo.find({
+            where: { packageId: packageId },
+            relations: { passage: true, audio: true }
+        });
+        if (questionsList.length === 0 && pkg.questions && (pkg.questions.listening?.length || pkg.questions.structure?.length || pkg.questions.reading?.length)) {
             const allIds = [
                 ...(pkg.questions.listening || []),
                 ...(pkg.questions.structure || []),
@@ -174,8 +178,9 @@ let TestEngineService = class TestEngineService {
                     .getMany();
             }
         }
-        else {
+        if (questionsList.length === 0) {
             questionsList = await this.questionRepo.find({
+                where: { packageId: (0, typeorm_2.IsNull)() },
                 relations: { passage: true, audio: true }
             });
         }
@@ -183,7 +188,19 @@ let TestEngineService = class TestEngineService {
         questionsList.sort((a, b) => {
             const orderA = sectionOrder[a.section] || 99;
             const orderB = sectionOrder[b.section] || 99;
-            return orderA - orderB;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            if (a.section === 'Reading' && b.section === 'Reading') {
+                if (a.passageId && b.passageId) {
+                    return a.passageId.localeCompare(b.passageId);
+                }
+                if (a.passageId)
+                    return -1;
+                if (b.passageId)
+                    return 1;
+            }
+            return 0;
         });
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {

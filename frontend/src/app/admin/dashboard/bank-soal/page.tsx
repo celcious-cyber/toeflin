@@ -11,6 +11,9 @@ interface Question {
   answerKey: string;
   explanation?: string;
   packageId?: string;
+  passageId?: string;
+  passage?: { id: string; title: string; content: string };
+  audio?: { id: string; fileUrl: string };
 }
 
 interface TestPackage {
@@ -19,17 +22,25 @@ interface TestPackage {
   type: string;
 }
 
+interface Passage {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export default function BankSoalPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [packages, setPackages] = useState<TestPackage[]>([]);
+  const [passages, setPassages] = useState<Passage[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState(''); // For import Excel
   const [search, setSearch] = useState('');
   const [filterSection, setFilterSection] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState('');
 
-  const [form, setForm] = useState<Partial<Question & { packageId: string; audioUrl: string }>>({
-    section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '', audioUrl: ''
+  const [form, setForm] = useState<Partial<Question & { packageId: string; audioUrl: string; passageId: string; passageTitle: string; passageContent: string }>>({
+    section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '', audioUrl: '', passageId: '', passageTitle: '', passageContent: ''
   });
 
   const fetchQuestions = async () => {
@@ -42,26 +53,105 @@ export default function BankSoalPage() {
     if (res.ok) setPackages(await res.json());
   };
 
+  const fetchPassages = async () => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/passages`);
+    if (res.ok) setPassages(await res.json());
+  };
+
   useEffect(() => {
     fetchQuestions();
     fetchPackages();
+    fetchPassages();
   }, []);
 
-  const handleAdd = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
+  const openAddModal = () => {
+    setEditingQuestionId(null);
+    setForm({
+      section: 'Listening',
+      content: '',
+      choices: { a: '', b: '', c: '', d: '' },
+      answerKey: 'a',
+      explanation: '',
+      packageId: '',
+      audioUrl: '',
+      passageId: '',
+      passageTitle: '',
+      passageContent: ''
     });
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (q: Question) => {
+    setEditingQuestionId(q.id);
+    setForm({
+      section: q.section,
+      content: q.content,
+      choices: q.choices,
+      answerKey: q.answerKey.toLowerCase(),
+      explanation: q.explanation || '',
+      packageId: q.packageId || '',
+      audioUrl: q.audio?.fileUrl || '',
+      passageId: q.passageId || '',
+      passageTitle: '',
+      passageContent: ''
+    });
+    setShowAddModal(true);
+  };
+
+  const handleSave = async () => {
+    const isEdit = !!editingQuestionId;
+    const url = isEdit
+      ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/${editingQuestionId}`
+      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    // Build the request body
+    const body: any = {
+      section: form.section,
+      content: form.content,
+      choices: form.choices,
+      answerKey: form.answerKey?.toUpperCase(),
+      explanation: form.explanation || '',
+      packageId: form.packageId || null,
+      audioUrl: form.audioUrl || null,
+    };
+
+    if (form.section === 'Reading') {
+      if (form.passageId === 'new') {
+        body.passageTitle = form.passageTitle;
+        body.passageContent = form.passageContent;
+        body.passageId = null;
+      } else if (form.passageId) {
+        body.passageId = form.passageId;
+      } else {
+        body.passageId = null;
+      }
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
     if (res.ok) {
       setShowAddModal(false);
       fetchQuestions();
-      setForm({ section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '', audioUrl: '' });
+      fetchPassages(); // Refresh passages dropdown
+      setEditingQuestionId(null);
+      setForm({
+        section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '', audioUrl: '', passageId: '', passageTitle: '', passageContent: ''
+      });
+    } else {
+      alert("Gagal menyimpan soal.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/${id}`, { method: 'DELETE' });
-    fetchQuestions();
+    if (confirm("Apakah Anda yakin ingin menghapus soal ini?")) {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/${id}`, { method: 'DELETE' });
+      fetchQuestions();
+    }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,13 +170,14 @@ export default function BankSoalPage() {
       const data = await res.json();
       setImportMsg(`Berhasil import ${data.importedCount} soal!`);
       fetchQuestions();
+      fetchPassages();
       setTimeout(() => setImportMsg(''), 3000);
     }
   };
 
   const filtered = questions.filter(q =>
     (!filterSection || q.section === filterSection) &&
-    (!search || q.content.toLowerCase().includes(search.toLowerCase()))
+    (!search || q.content.toLowerCase().includes(search.toLowerCase()) || (q.passage?.title && q.passage.title.toLowerCase().includes(search.toLowerCase())))
   );
 
   return (
@@ -115,7 +206,7 @@ export default function BankSoalPage() {
             <Upload size={16} /> Import Excel
             <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
           </label>
-          <button onClick={() => setShowAddModal(true)} className="btn-hover px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium flex items-center gap-2 text-sm">
+          <button onClick={openAddModal} className="btn-hover px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium flex items-center gap-2 text-sm">
             <Plus size={16} /> Tambah Soal
           </button>
         </div>
@@ -126,7 +217,7 @@ export default function BankSoalPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" size={18} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari soal..." className="w-full bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-orange-500/30 text-sm" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari soal atau passage..." className="w-full bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-orange-500/30 text-sm" />
         </div>
         <div className="relative">
           <select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-orange-500/30 text-sm">
@@ -171,10 +262,24 @@ export default function BankSoalPage() {
                     </span>
                   )}
                 </td>
-                <td className="p-4 max-w-sm truncate">{q.content}</td>
+                <td className="p-4 max-w-sm">
+                  <div className="truncate font-medium text-slate-800">{q.content}</div>
+                  {q.passage && (
+                    <div className="text-[10px] text-purple-600 font-semibold mt-1 bg-purple-500/10 px-2 py-0.5 rounded-full w-max inline-flex items-center gap-1">
+                      📖 {q.passage.title}
+                    </div>
+                  )}
+                </td>
                 <td className="p-4 font-mono uppercase">{q.answerKey}</td>
                 <td className="p-4 text-right">
-                  <button onClick={() => handleDelete(q.id)} className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={16} /></button>
+                  <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => openEditModal(q)} className="p-2 rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors">
+                      <Edit size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(q.id)} className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -184,8 +289,10 @@ export default function BankSoalPage() {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
-          <div className="glass w-full max-w-lg rounded-3xl p-8 flex flex-col gap-4" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold font-[family-name:var(--font-outfit)]">Tambah Soal Baru</h2>
+          <div className="glass w-full max-w-lg rounded-3xl p-8 flex flex-col gap-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-bold font-[family-name:var(--font-outfit)]">
+              {editingQuestionId ? 'Edit Soal' : 'Tambah Soal Baru'}
+            </h2>
             <select value={form.section} onChange={e => setForm({ ...form, section: e.target.value })} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm">
               <option value="Listening">Listening</option>
               <option value="Structure">Structure</option>
@@ -202,6 +309,7 @@ export default function BankSoalPage() {
               ))}
             </select>
 
+            {/* Listening specific form fields */}
             {form.section === 'Listening' && (
               <div className="flex flex-col gap-2 border border-foreground/10 p-4 rounded-xl bg-foreground/[0.02]">
                 <label className="text-xs font-bold opacity-75">Upload File Audio (MP3/WAV)</label>
@@ -241,19 +349,63 @@ export default function BankSoalPage() {
               </div>
             )}
 
+            {/* Reading specific form fields */}
+            {form.section === 'Reading' && (
+              <div className="flex flex-col gap-3 border border-foreground/10 p-4 rounded-xl bg-foreground/[0.02]">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold opacity-75">Pilih Bacaan (Passage)</label>
+                  <select
+                    value={form.passageId || ''}
+                    onChange={e => setForm({ ...form, passageId: e.target.value })}
+                    className="bg-background border border-foreground/10 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                  >
+                    <option value="">Tanpa Passage (Teks menyatu di soal)</option>
+                    <option value="new">+ Buat Passage Baru</option>
+                    {passages.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+                {form.passageId === 'new' && (
+                  <div className="flex flex-col gap-2 animate-fade-in mt-1">
+                    <input
+                      value={form.passageTitle || ''}
+                      onChange={e => setForm({ ...form, passageTitle: e.target.value })}
+                      placeholder="Judul Passage Baru"
+                      className="bg-background border border-foreground/10 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                    />
+                    <textarea
+                      value={form.passageContent || ''}
+                      onChange={e => setForm({ ...form, passageContent: e.target.value })}
+                      placeholder="Tulis konten bacaan di sini..."
+                      rows={4}
+                      className="bg-background border border-foreground/10 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 resize-y"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Konten soal..." rows={3} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm resize-none" />
+            
             <div className="grid grid-cols-2 gap-3">
               {['a', 'b', 'c', 'd'].map(k => (
                 <input key={k} value={(form.choices as any)?.[k] || ''} onChange={e => setForm({ ...form, choices: { ...form.choices as any, [k]: e.target.value } })} placeholder={`Pilihan ${k.toUpperCase()}`} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm" />
               ))}
             </div>
+            
             <select value={form.answerKey} onChange={e => setForm({ ...form, answerKey: e.target.value })} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm">
-              <option value="a">Jawaban: A</option><option value="b">Jawaban: B</option><option value="c">Jawaban: C</option><option value="d">Jawaban: D</option>
+              <option value="a">Jawaban: A</option>
+              <option value="b">Jawaban: B</option>
+              <option value="c">Jawaban: C</option>
+              <option value="d">Jawaban: D</option>
             </select>
+            
             <textarea value={form.explanation || ''} onChange={e => setForm({ ...form, explanation: e.target.value })} placeholder="Penjelasan (opsional)" rows={2} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm resize-none" />
+            
             <div className="flex gap-3 justify-end mt-2">
               <button onClick={() => setShowAddModal(false)} className="px-5 py-2.5 glass rounded-xl font-medium text-sm">Batal</button>
-              <button onClick={handleAdd} className="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium text-sm">Simpan</button>
+              <button onClick={handleSave} className="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-medium text-sm">Simpan</button>
             </div>
           </div>
         </div>

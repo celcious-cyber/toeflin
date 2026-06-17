@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { TestAttempt } from '../entities/test-attempt.entity';
 import { TestPackage } from '../entities/test-package.entity';
 import { ScoreConversion } from '../entities/score-conversion.entity';
@@ -187,17 +187,28 @@ export class TestEngineService {
     // 3. Fallback: If still no questions, get all general questions (where packageId is null)
     if (questionsList.length === 0) {
       questionsList = await this.questionRepo.find({
-        where: { packageId: null },
+        where: { packageId: IsNull() },
         relations: { passage: true, audio: true }
       });
     }
 
-    // Sort questions by TOEFL section order: Listening, Structure, Reading
+    // Sort questions by TOEFL section order: Listening, Structure, Reading, and group Reading questions by passageId
     const sectionOrder: Record<string, number> = { 'Listening': 1, 'Structure': 2, 'Reading': 3 };
     questionsList.sort((a, b) => {
       const orderA = sectionOrder[a.section] || 99;
       const orderB = sectionOrder[b.section] || 99;
-      return orderA - orderB;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      // Group Reading questions by passageId
+      if (a.section === 'Reading' && b.section === 'Reading') {
+        if (a.passageId && b.passageId) {
+          return a.passageId.localeCompare(b.passageId);
+        }
+        if (a.passageId) return -1; // Questions with passages first
+        if (b.passageId) return 1;
+      }
+      return 0;
     });
 
     // Process questions:

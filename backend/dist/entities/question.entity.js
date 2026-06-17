@@ -13,6 +13,7 @@ exports.Question = void 0;
 const typeorm_1 = require("typeorm");
 const passage_entity_1 = require("./passage.entity");
 const audio_entity_1 = require("./audio.entity");
+const test_package_entity_1 = require("./test-package.entity");
 let Question = class Question {
     id;
     section;
@@ -25,6 +26,8 @@ let Question = class Question {
     audioId;
     passage;
     passageId;
+    package;
+    packageId;
 };
 exports.Question = Question;
 __decorate([
@@ -62,7 +65,7 @@ __decorate([
 ], Question.prototype, "audio", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], Question.prototype, "audioId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => passage_entity_1.Passage, { nullable: true }),
@@ -71,8 +74,17 @@ __decorate([
 ], Question.prototype, "passage", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], Question.prototype, "passageId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => test_package_entity_1.TestPackage, { nullable: true, onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'packageId' }),
+    __metadata("design:type", test_package_entity_1.TestPackage)
+], Question.prototype, "package", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Object)
+], Question.prototype, "packageId", void 0);
 exports.Question = Question = __decorate([
     (0, typeorm_1.Entity)('questions')
 ], Question);

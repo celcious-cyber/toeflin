@@ -25,8 +25,11 @@ export class QuestionsService {
     return this.questionRepository.findOne({ where: { id }, relations: { passage: true, audio: true } });
   }
 
-  async create(data: Partial<Question & { audioUrl?: string }>): Promise<Question> {
-    const { audioUrl, ...questionData } = data;
+  async create(data: Partial<Question & { audioUrl?: string; passageTitle?: string; passageContent?: string }>): Promise<Question> {
+    const { audioUrl, passageTitle, passageContent, ...questionData } = data;
+    if (questionData.passageId === '' || questionData.passageId === 'new') {
+      questionData.passageId = null;
+    }
     const question = this.questionRepository.create(questionData);
     
     if (audioUrl) {
@@ -35,12 +38,25 @@ export class QuestionsService {
       question.audio = savedAudio;
       question.audioId = savedAudio.id;
     }
+
+    if (passageTitle) {
+      let passage = await this.passageRepository.findOne({ where: { title: passageTitle } });
+      if (!passage) {
+        passage = this.passageRepository.create({ title: passageTitle, content: passageContent || '' });
+        passage = await this.passageRepository.save(passage);
+      } else if (passageContent && passage.content !== passageContent) {
+        passage.content = passageContent;
+        passage = await this.passageRepository.save(passage);
+      }
+      question.passage = passage;
+      question.passageId = passage.id;
+    }
     
     return this.questionRepository.save(question);
   }
 
-  async update(id: string, data: Partial<Question & { audioUrl?: string }>): Promise<Question | null> {
-    const { audioUrl, ...questionData } = data;
+  async update(id: string, data: Partial<Question & { audioUrl?: string; passageTitle?: string; passageContent?: string }>): Promise<Question | null> {
+    const { audioUrl, passageTitle, passageContent, ...questionData } = data;
     const existing = await this.findOne(id);
     if (!existing) return null;
     
@@ -54,6 +70,24 @@ export class QuestionsService {
         questionData.audioId = savedAudio.id;
       }
     }
+
+    if (passageTitle !== undefined) {
+      if (passageTitle) {
+        let passage = await this.passageRepository.findOne({ where: { title: passageTitle } });
+        if (!passage) {
+          passage = this.passageRepository.create({ title: passageTitle, content: passageContent || '' });
+          passage = await this.passageRepository.save(passage);
+        } else if (passageContent && passage.content !== passageContent) {
+          passage.content = passageContent;
+          passage = await this.passageRepository.save(passage);
+        }
+        questionData.passageId = passage.id;
+      } else {
+        questionData.passageId = null;
+      }
+    } else if (questionData.passageId === '') {
+      questionData.passageId = null;
+    }
     
     await this.questionRepository.update(id, questionData);
     return this.findOne(id);
@@ -63,31 +97,101 @@ export class QuestionsService {
     await this.questionRepository.delete(id);
   }
 
+  async findAllPassages(): Promise<Passage[]> {
+    return this.passageRepository.find();
+  }
+
   async importFromExcel(buffer: Buffer, packageId?: string): Promise<any> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
     const worksheet = workbook.worksheets[0];
     
+    const allPassages = await this.passageRepository.find();
+    const passageMap = new Map<string, Passage>();
+    for (const p of allPassages) {
+      passageMap.set(p.title.toLowerCase().trim(), p);
+    }
+
+    const allAudios = await this.audioRepository.find();
+    const audioMap = new Map<string, Audio>();
+    for (const a of allAudios) {
+      audioMap.set(a.fileUrl.toLowerCase().trim(), a);
+    }
+
     const questionsToSave: Question[] = [];
+    const rows: any[] = [];
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header
-      
-      const question = this.questionRepository.create({
-        section: row.getCell(1).value?.toString() || '',
-        skillCategory: row.getCell(2).value?.toString(),
-        content: row.getCell(3).value?.toString() || '',
-        choices: {
-          a: row.getCell(4).value?.toString(),
-          b: row.getCell(5).value?.toString(),
-          c: row.getCell(6).value?.toString(),
-          d: row.getCell(7).value?.toString(),
-        },
-        answerKey: row.getCell(8).value?.toString() || '',
-        explanation: row.getCell(9).value?.toString(),
-        packageId: packageId || null,
-      });
-      questionsToSave.push(question);
+      if (rowNumber > 1) {
+        rows.push(row);
+      }
     });
+
+    for (const row of rows) {
+      const section = row.getCell(1).value?.toString() || '';
+      const skillCategory = row.getCell(2).value?.toString();
+      const content = row.getCell(3).value?.toString() || '';
+      const choiceA = row.getCell(4).value?.toString() || '';
+      const choiceB = row.getCell(5).value?.toString() || '';
+      const choiceC = row.getCell(6).value?.toString() || '';
+      const choiceD = row.getCell(7).value?.toString() || '';
+      const answerKey = row.getCell(8).value?.toString() || '';
+      const explanation = row.getCell(9).value?.toString();
+      const audioUrl = row.getCell(10).value?.toString()?.trim();
+      const passageTitle = row.getCell(11).value?.toString()?.trim();
+      const passageContent = row.getCell(12).value?.toString()?.trim();
+
+      let audio: Audio | undefined;
+      if (audioUrl) {
+        const audioKey = audioUrl.toLowerCase();
+        if (audioMap.has(audioKey)) {
+          audio = audioMap.get(audioKey);
+        } else {
+          audio = this.audioRepository.create({ fileUrl: audioUrl });
+          audio = await this.audioRepository.save(audio);
+          audioMap.set(audioKey, audio);
+        }
+      }
+
+      let passage: Passage | undefined;
+      if (passageTitle) {
+        const passageKey = passageTitle.toLowerCase();
+        const existingPassage = passageMap.get(passageKey);
+        if (existingPassage) {
+          passage = existingPassage;
+          if (passageContent && passage.content !== passageContent) {
+            passage.content = passageContent;
+            passage = await this.passageRepository.save(passage);
+            passageMap.set(passageKey, passage);
+          }
+        } else {
+          const newPassage = this.passageRepository.create({
+            title: passageTitle,
+            content: passageContent || '',
+          });
+          passage = await this.passageRepository.save(newPassage);
+          passageMap.set(passageKey, passage);
+        }
+      }
+
+      const question = this.questionRepository.create({
+        section,
+        skillCategory,
+        content,
+        choices: {
+          a: choiceA,
+          b: choiceB,
+          c: choiceC,
+          d: choiceD,
+        },
+        answerKey,
+        explanation,
+        packageId: packageId || null,
+        audioId: audio ? audio.id : null,
+        passageId: passage ? passage.id : null,
+      });
+
+      questionsToSave.push(question);
+    }
 
     await this.questionRepository.save(questionsToSave);
     return { importedCount: questionsToSave.length };

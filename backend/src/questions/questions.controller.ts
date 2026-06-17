@@ -12,6 +12,11 @@ export class QuestionsController {
     return this.questionsService.findAll();
   }
 
+  @Get('passages')
+  findAllPassages() {
+    return this.questionsService.findAllPassages();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.questionsService.findOne(id);

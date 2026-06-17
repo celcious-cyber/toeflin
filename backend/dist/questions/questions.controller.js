@@ -24,6 +24,9 @@ let QuestionsController = class QuestionsController {
     findAll() {
         return this.questionsService.findAll();
     }
+    findAllPassages() {
+        return this.questionsService.findAllPassages();
+    }
     findOne(id) {
         return this.questionsService.findOne(id);
     }
@@ -36,10 +39,10 @@ let QuestionsController = class QuestionsController {
     remove(id) {
         return this.questionsService.remove(id);
     }
-    async importExcel(file) {
+    async importExcel(file, packageId) {
         if (!file)
             throw new Error('File is required');
-        return this.questionsService.importFromExcel(file.buffer);
+        return this.questionsService.importFromExcel(file.buffer, packageId);
     }
     seed() {
         return this.questionsService.seed();
@@ -52,6 +55,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], QuestionsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('passages'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], QuestionsController.prototype, "findAllPassages", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -85,8 +94,9 @@ __decorate([
     (0, common_1.Post)('import'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Query)('packageId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], QuestionsController.prototype, "importExcel", null);
 __decorate([

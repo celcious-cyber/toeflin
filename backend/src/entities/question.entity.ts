@@ -31,19 +31,19 @@ export class Question {
   audio: Audio;
 
   @Column({ nullable: true })
-  audioId: string;
+  audioId: string | null;
 
   @ManyToOne(() => Passage, { nullable: true })
   @JoinColumn({ name: 'passageId' })
   passage: Passage;
 
   @Column({ nullable: true })
-  passageId: string;
+  passageId: string | null;
 
   @ManyToOne(() => TestPackage, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'packageId' })
   package: TestPackage;
 
   @Column({ nullable: true })
-  packageId: string;
+  packageId: string | null;
 }

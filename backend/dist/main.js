@@ -40,9 +40,12 @@ const test_packages_service_1 = require("./test-packages/test-packages.service")
 const questions_service_1 = require("./questions/questions.service");
 const bcrypt = __importStar(require("bcrypt"));
 const user_entity_1 = require("./entities/user.entity");
+const express = __importStar(require("express"));
+const path_1 = require("path");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors();
+    app.use('/uploads', express.static((0, path_1.join)(process.cwd(), 'uploads')));
     const usersService = app.get(users_service_1.UsersService);
     const adminExists = await usersService.findOneByEmail('admin@cordova.ac.id');
     if (!adminExists) {

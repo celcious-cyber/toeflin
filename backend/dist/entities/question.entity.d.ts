@@ -1,5 +1,6 @@
 import { Passage } from './passage.entity';
 import { Audio } from './audio.entity';
+import { TestPackage } from './test-package.entity';
 export declare class Question {
     id: string;
     section: string;
@@ -9,7 +10,9 @@ export declare class Question {
     answerKey: string;
     explanation: string;
     audio: Audio;
-    audioId: string;
+    audioId: string | null;
     passage: Passage;
-    passageId: string;
+    passageId: string | null;
+    package: TestPackage;
+    packageId: string | null;
 }

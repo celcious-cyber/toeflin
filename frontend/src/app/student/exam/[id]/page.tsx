@@ -9,7 +9,7 @@ interface Question {
   content: string;
   choices: { a: string; b: string; c: string; d: string };
   answerKey: string;
-  passage?: { title: string; content: string };
+  passage?: { id?: string; title: string; content: string };
   shuffledEntries?: [string, any][];
 }
 
@@ -511,7 +511,7 @@ export default function ExamPage() {
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col lg:flex-row gap-3">
             {currentQ?.passage && (
-              <div className="flex-1 lg:max-w-[50%] glass rounded-2xl p-8 overflow-y-auto max-h-[calc(100vh-8rem)]">
+              <div key={currentQ.passage.id || currentQ.passage.title} className="flex-1 lg:max-w-[50%] glass rounded-2xl p-8 overflow-y-auto max-h-[calc(100vh-8rem)]">
                 {currentQ.passage.title && <h3 className="font-bold text-xl mb-4 font-[family-name:var(--font-outfit)]">{currentQ.passage.title}</h3>}
                 <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed opacity-90 select-none">
                   {currentQ.passage.content}

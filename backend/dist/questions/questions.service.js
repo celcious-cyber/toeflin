@@ -51,13 +51,16 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const question_entity_1 = require("../entities/question.entity");
 const passage_entity_1 = require("../entities/passage.entity");
+const audio_entity_1 = require("../entities/audio.entity");
 const ExcelJS = __importStar(require("exceljs"));
 let QuestionsService = class QuestionsService {
     questionRepository;
     passageRepository;
-    constructor(questionRepository, passageRepository) {
+    audioRepository;
+    constructor(questionRepository, passageRepository, audioRepository) {
         this.questionRepository = questionRepository;
         this.passageRepository = passageRepository;
+        this.audioRepository = audioRepository;
     }
     async findAll() {
         return this.questionRepository.find({ relations: { passage: true, audio: true } });
@@ -66,39 +69,162 @@ let QuestionsService = class QuestionsService {
         return this.questionRepository.findOne({ where: { id }, relations: { passage: true, audio: true } });
     }
     async create(data) {
-        const question = this.questionRepository.create(data);
+        const { audioUrl, passageTitle, passageContent, ...questionData } = data;
+        if (questionData.passageId === '' || questionData.passageId === 'new') {
+            questionData.passageId = null;
+        }
+        const question = this.questionRepository.create(questionData);
+        if (audioUrl) {
+            const audio = this.audioRepository.create({ fileUrl: audioUrl });
+            const savedAudio = await this.audioRepository.save(audio);
+            question.audio = savedAudio;
+            question.audioId = savedAudio.id;
+        }
+        if (passageTitle) {
+            let passage = await this.passageRepository.findOne({ where: { title: passageTitle } });
+            if (!passage) {
+                passage = this.passageRepository.create({ title: passageTitle, content: passageContent || '' });
+                passage = await this.passageRepository.save(passage);
+            }
+            else if (passageContent && passage.content !== passageContent) {
+                passage.content = passageContent;
+                passage = await this.passageRepository.save(passage);
+            }
+            question.passage = passage;
+            question.passageId = passage.id;
+        }
         return this.questionRepository.save(question);
     }
     async update(id, data) {
-        await this.questionRepository.update(id, data);
+        const { audioUrl, passageTitle, passageContent, ...questionData } = data;
+        const existing = await this.findOne(id);
+        if (!existing)
+            return null;
+        if (audioUrl) {
+            if (existing.audio) {
+                existing.audio.fileUrl = audioUrl;
+                await this.audioRepository.save(existing.audio);
+            }
+            else {
+                const audio = this.audioRepository.create({ fileUrl: audioUrl });
+                const savedAudio = await this.audioRepository.save(audio);
+                questionData.audioId = savedAudio.id;
+            }
+        }
+        if (passageTitle !== undefined) {
+            if (passageTitle) {
+                let passage = await this.passageRepository.findOne({ where: { title: passageTitle } });
+                if (!passage) {
+                    passage = this.passageRepository.create({ title: passageTitle, content: passageContent || '' });
+                    passage = await this.passageRepository.save(passage);
+                }
+                else if (passageContent && passage.content !== passageContent) {
+                    passage.content = passageContent;
+                    passage = await this.passageRepository.save(passage);
+                }
+                questionData.passageId = passage.id;
+            }
+            else {
+                questionData.passageId = null;
+            }
+        }
+        else if (questionData.passageId === '') {
+            questionData.passageId = null;
+        }
+        await this.questionRepository.update(id, questionData);
         return this.findOne(id);
     }
     async remove(id) {
         await this.questionRepository.delete(id);
     }
-    async importFromExcel(buffer) {
+    async findAllPassages() {
+        return this.passageRepository.find();
+    }
+    async importFromExcel(buffer, packageId) {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buffer);
         const worksheet = workbook.worksheets[0];
+        const allPassages = await this.passageRepository.find();
+        const passageMap = new Map();
+        for (const p of allPassages) {
+            passageMap.set(p.title.toLowerCase().trim(), p);
+        }
+        const allAudios = await this.audioRepository.find();
+        const audioMap = new Map();
+        for (const a of allAudios) {
+            audioMap.set(a.fileUrl.toLowerCase().trim(), a);
+        }
         const questionsToSave = [];
+        const rows = [];
         worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1)
-                return;
+            if (rowNumber > 1) {
+                rows.push(row);
+            }
+        });
+        for (const row of rows) {
+            const section = row.getCell(1).value?.toString() || '';
+            const skillCategory = row.getCell(2).value?.toString();
+            const content = row.getCell(3).value?.toString() || '';
+            const choiceA = row.getCell(4).value?.toString() || '';
+            const choiceB = row.getCell(5).value?.toString() || '';
+            const choiceC = row.getCell(6).value?.toString() || '';
+            const choiceD = row.getCell(7).value?.toString() || '';
+            const answerKey = row.getCell(8).value?.toString() || '';
+            const explanation = row.getCell(9).value?.toString();
+            const audioUrl = row.getCell(10).value?.toString()?.trim();
+            const passageTitle = row.getCell(11).value?.toString()?.trim();
+            const passageContent = row.getCell(12).value?.toString()?.trim();
+            let audio;
+            if (audioUrl) {
+                const audioKey = audioUrl.toLowerCase();
+                if (audioMap.has(audioKey)) {
+                    audio = audioMap.get(audioKey);
+                }
+                else {
+                    audio = this.audioRepository.create({ fileUrl: audioUrl });
+                    audio = await this.audioRepository.save(audio);
+                    audioMap.set(audioKey, audio);
+                }
+            }
+            let passage;
+            if (passageTitle) {
+                const passageKey = passageTitle.toLowerCase();
+                const existingPassage = passageMap.get(passageKey);
+                if (existingPassage) {
+                    passage = existingPassage;
+                    if (passageContent && passage.content !== passageContent) {
+                        passage.content = passageContent;
+                        passage = await this.passageRepository.save(passage);
+                        passageMap.set(passageKey, passage);
+                    }
+                }
+                else {
+                    const newPassage = this.passageRepository.create({
+                        title: passageTitle,
+                        content: passageContent || '',
+                    });
+                    passage = await this.passageRepository.save(newPassage);
+                    passageMap.set(passageKey, passage);
+                }
+            }
             const question = this.questionRepository.create({
-                section: row.getCell(1).value?.toString() || '',
-                skillCategory: row.getCell(2).value?.toString(),
-                content: row.getCell(3).value?.toString() || '',
+                section,
+                skillCategory,
+                content,
                 choices: {
-                    a: row.getCell(4).value?.toString(),
-                    b: row.getCell(5).value?.toString(),
-                    c: row.getCell(6).value?.toString(),
-                    d: row.getCell(7).value?.toString(),
+                    a: choiceA,
+                    b: choiceB,
+                    c: choiceC,
+                    d: choiceD,
                 },
-                answerKey: row.getCell(8).value?.toString() || '',
-                explanation: row.getCell(9).value?.toString(),
+                answerKey,
+                explanation,
+                packageId: packageId || null,
+                audioId: audio ? audio.id : null,
+                passageId: passage ? passage.id : null,
             });
             questionsToSave.push(question);
-        });
+        }
         await this.questionRepository.save(questionsToSave);
         return { importedCount: questionsToSave.length };
     }
@@ -156,7 +282,9 @@ exports.QuestionsService = QuestionsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(question_entity_1.Question)),
     __param(1, (0, typeorm_1.InjectRepository)(passage_entity_1.Passage)),
+    __param(2, (0, typeorm_1.InjectRepository)(audio_entity_1.Audio)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], QuestionsService);
 //# sourceMappingURL=questions.service.js.map

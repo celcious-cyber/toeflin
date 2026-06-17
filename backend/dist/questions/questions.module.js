@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const question_entity_1 = require("../entities/question.entity");
 const passage_entity_1 = require("../entities/passage.entity");
+const audio_entity_1 = require("../entities/audio.entity");
 const questions_service_1 = require("./questions.service");
 const questions_controller_1 = require("./questions.controller");
 let QuestionsModule = class QuestionsModule {
@@ -18,7 +19,7 @@ let QuestionsModule = class QuestionsModule {
 exports.QuestionsModule = QuestionsModule;
 exports.QuestionsModule = QuestionsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([question_entity_1.Question, passage_entity_1.Passage])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([question_entity_1.Question, passage_entity_1.Passage, audio_entity_1.Audio])],
         providers: [questions_service_1.QuestionsService],
         controllers: [questions_controller_1.QuestionsController],
     })
