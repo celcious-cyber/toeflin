@@ -1,45 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { Users, FileText, Activity, ClipboardList, TrendingUp, ArrowUpRight } from 'lucide-react';
-
-const stats = [
-  {
-    label: 'Total Mahasiswa',
-    value: '1,204',
-    change: '+12 bulan ini',
-    icon: Users,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-    border: 'border-blue-100',
-  },
-  {
-    label: 'Soal di Bank',
-    value: '8,432',
-    change: '+54 soal baru',
-    icon: FileText,
-    color: 'text-violet-600',
-    bg: 'bg-violet-50',
-    border: 'border-violet-100',
-  },
-  {
-    label: 'Sesi Ujian Aktif',
-    value: '24',
-    change: 'Sedang berlangsung',
-    icon: Activity,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
-  },
-  {
-    label: 'Permohonan Pending',
-    value: '3',
-    change: 'Menunggu persetujuan',
-    icon: ClipboardList,
-    color: 'text-orange-600',
-    bg: 'bg-orange-50',
-    border: 'border-orange-100',
-  },
-];
+import { Users, FileText, Activity, ClipboardList, ArrowUpRight } from 'lucide-react';
 
 const quickLinks = [
   { label: 'Kelola Bank Soal', href: '/admin/dashboard/bank-soal', desc: 'Tambah, edit, atau hapus soal ujian' },
@@ -49,6 +10,13 @@ const quickLinks = [
 
 export default function AdminOverview() {
   const [time, setTime] = useState('');
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalQuestions: 0,
+    totalActiveAttempts: 0,
+    totalPendingRequests: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const update = () => {
@@ -58,6 +26,62 @@ export default function AdminOverview() {
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/stats`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error('Error fetching admin stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statsDisplay = [
+    {
+      label: 'Total Mahasiswa',
+      value: stats.totalStudents,
+      change: 'Terdaftar aktif',
+      icon: Users,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+      border: 'border-blue-100',
+    },
+    {
+      label: 'Soal di Bank',
+      value: stats.totalQuestions,
+      change: 'Uji kompetensi',
+      icon: FileText,
+      color: 'text-violet-600',
+      bg: 'bg-violet-50',
+      border: 'border-violet-100',
+    },
+    {
+      label: 'Sesi Ujian Aktif',
+      value: stats.totalActiveAttempts,
+      change: 'Belum disubmit',
+      icon: Activity,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-100',
+    },
+    {
+      label: 'Permohonan Pending',
+      value: stats.totalPendingRequests,
+      change: 'Menunggu approval',
+      icon: ClipboardList,
+      color: 'text-orange-600',
+      bg: 'bg-orange-50',
+      border: 'border-orange-100',
+    },
+  ];
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8">
@@ -79,7 +103,7 @@ export default function AdminOverview() {
       <div>
         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Ringkasan</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((s, i) => (
+          {statsDisplay.map((s, i) => (
             <div key={i} className={`bg-white border ${s.border} rounded-2xl p-5 hover:shadow-md transition-all duration-200 group`}>
               <div className="flex items-start justify-between mb-4">
                 <div className={`p-2.5 rounded-xl ${s.bg}`}>
@@ -87,7 +111,9 @@ export default function AdminOverview() {
                 </div>
                 <ArrowUpRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
               </div>
-              <p className="text-2xl font-black text-slate-800 font-[family-name:var(--font-outfit)]">{s.value}</p>
+              <p className="text-2xl font-black text-slate-800 font-[family-name:var(--font-outfit)]">
+                {loading ? '...' : s.value.toLocaleString('id-ID')}
+              </p>
               <p className="text-sm font-semibold text-slate-500 mt-0.5">{s.label}</p>
               <p className="text-xs text-slate-400 mt-1">{s.change}</p>
             </div>

@@ -33,6 +33,9 @@ let TestEngineController = class TestEngineController {
     requestAttempt(body) {
         return this.testEngineService.requestAttempt(body.userId, body.packageId);
     }
+    getUserAttempts(userId) {
+        return this.testEngineService.getUserAttempts(userId);
+    }
     getRequests() {
         return this.testEngineService.getRequests();
     }
@@ -70,6 +73,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], TestEngineController.prototype, "requestAttempt", null);
+__decorate([
+    (0, common_1.Get)('attempts/user/:userId'),
+    __param(0, (0, common_1.Param)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], TestEngineController.prototype, "getUserAttempts", null);
 __decorate([
     (0, common_1.Get)('requests'),
     __metadata("design:type", Function),

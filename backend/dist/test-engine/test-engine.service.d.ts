@@ -16,6 +16,7 @@ export declare class TestEngineService {
         success: boolean;
     }>;
     submitTest(attemptId: string): Promise<TestAttempt>;
+    getUserAttempts(userId: string): Promise<TestAttempt[]>;
     requestAttempt(userId: string, packageId: string): Promise<TestRequest>;
     getRequests(): Promise<TestRequest[]>;
     updateRequestStatus(id: string, status: RequestStatus): Promise<TestRequest>;

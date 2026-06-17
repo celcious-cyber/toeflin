@@ -5,16 +5,47 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("typeorm");
+const user_entity_1 = require("./entities/user.entity");
+const question_entity_1 = require("./entities/question.entity");
+const test_attempt_entity_1 = require("./entities/test-attempt.entity");
+const test_request_entity_1 = require("./entities/test-request.entity");
 let AppService = class AppService {
+    dataSource;
+    constructor(dataSource) {
+        this.dataSource = dataSource;
+    }
     getHello() {
         return 'Hello World!';
+    }
+    async getAdminStats() {
+        const totalStudents = await this.dataSource.getRepository(user_entity_1.User).count({
+            where: { role: 'student' }
+        });
+        const totalQuestions = await this.dataSource.getRepository(question_entity_1.Question).count();
+        const totalActiveAttempts = await this.dataSource.getRepository(test_attempt_entity_1.TestAttempt).count({
+            where: { totalScore: null }
+        });
+        const totalPendingRequests = await this.dataSource.getRepository(test_request_entity_1.TestRequest).count({
+            where: { status: 'PENDING' }
+        });
+        return {
+            totalStudents,
+            totalQuestions,
+            totalActiveAttempts,
+            totalPendingRequests
+        };
     }
 };
 exports.AppService = AppService;
 exports.AppService = AppService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeorm_1.DataSource])
 ], AppService);
 //# sourceMappingURL=app.service.js.map
