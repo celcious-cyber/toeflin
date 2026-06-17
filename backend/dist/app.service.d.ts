@@ -8,5 +8,6 @@ export declare class AppService {
         totalQuestions: number;
         totalActiveAttempts: number;
         totalPendingRequests: number;
+        errors: string[] | undefined;
     }>;
 }

@@ -25,21 +25,47 @@ let AppService = class AppService {
         return 'Hello World!';
     }
     async getAdminStats() {
-        const totalStudents = await this.dataSource.getRepository(user_entity_1.User).count({
-            where: { role: 'student' }
-        });
-        const totalQuestions = await this.dataSource.getRepository(question_entity_1.Question).count();
-        const totalActiveAttempts = await this.dataSource.getRepository(test_attempt_entity_1.TestAttempt).count({
-            where: { totalScore: null }
-        });
-        const totalPendingRequests = await this.dataSource.getRepository(test_request_entity_1.TestRequest).count({
-            where: { status: 'PENDING' }
-        });
+        let totalStudents = 0;
+        let totalQuestions = 0;
+        let totalActiveAttempts = 0;
+        let totalPendingRequests = 0;
+        const errors = [];
+        try {
+            totalStudents = await this.dataSource.getRepository(user_entity_1.User).count({
+                where: { role: 'student' }
+            });
+        }
+        catch (e) {
+            errors.push(`totalStudents error: ${e.message}`);
+        }
+        try {
+            totalQuestions = await this.dataSource.getRepository(question_entity_1.Question).count();
+        }
+        catch (e) {
+            errors.push(`totalQuestions error: ${e.message}`);
+        }
+        try {
+            totalActiveAttempts = await this.dataSource.getRepository(test_attempt_entity_1.TestAttempt).count({
+                where: { totalScore: (0, typeorm_1.IsNull)() }
+            });
+        }
+        catch (e) {
+            errors.push(`totalActiveAttempts error: ${e.message}`);
+        }
+        try {
+            totalPendingRequests = await this.dataSource.getRepository(test_request_entity_1.TestRequest).count({
+                where: { status: 'PENDING' }
+            });
+        }
+        catch (e) {
+            errors.push(`totalPendingRequests error: ${e.message}`);
+        }
         return {
             totalStudents,
             totalQuestions,
             totalActiveAttempts,
-            totalPendingRequests
+            totalPendingRequests,
+            errors: errors.length > 0 ? errors : undefined
         };
     }
 };

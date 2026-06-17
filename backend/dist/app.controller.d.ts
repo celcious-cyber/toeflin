@@ -8,5 +8,6 @@ export declare class AppController {
         totalQuestions: number;
         totalActiveAttempts: number;
         totalPendingRequests: number;
+        errors: string[] | undefined;
     }>;
 }
