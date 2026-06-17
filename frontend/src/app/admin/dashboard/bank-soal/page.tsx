@@ -28,8 +28,8 @@ export default function BankSoalPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [importMsg, setImportMsg] = useState('');
 
-  const [form, setForm] = useState<Partial<Question & { packageId: string }>>({
-    section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: ''
+  const [form, setForm] = useState<Partial<Question & { packageId: string; audioUrl: string }>>({
+    section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '', audioUrl: ''
   });
 
   const fetchQuestions = async () => {
@@ -55,7 +55,7 @@ export default function BankSoalPage() {
     if (res.ok) {
       setShowAddModal(false);
       fetchQuestions();
-      setForm({ section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '' });
+      setForm({ section: 'Listening', content: '', choices: { a: '', b: '', c: '', d: '' }, answerKey: 'a', explanation: '', packageId: '', audioUrl: '' });
     }
   };
 
@@ -201,6 +201,46 @@ export default function BankSoalPage() {
                 <option key={p.id} value={p.id}>Target: {p.name}</option>
               ))}
             </select>
+
+            {form.section === 'Listening' && (
+              <div className="flex flex-col gap-2 border border-foreground/10 p-4 rounded-xl bg-foreground/[0.02]">
+                <label className="text-xs font-bold opacity-75">Upload File Audio (MP3/WAV)</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      try {
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/media/upload`, {
+                          method: 'POST',
+                          body: fd
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setForm(prev => ({ ...prev, audioUrl: data.url }));
+                          alert("Audio berhasil di-upload!");
+                        } else {
+                          alert("Gagal meng-upload audio.");
+                        }
+                      } catch (err) {
+                        alert("Terjadi kesalahan jaringan saat upload.");
+                      }
+                    }}
+                    className="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-500/10 file:text-orange-600 hover:file:bg-orange-500/20"
+                  />
+                  {form.audioUrl && (
+                    <span className="text-[10px] bg-green-500/10 text-green-600 font-bold px-2 py-0.5 rounded-full truncate max-w-[150px]">
+                      Ready: {form.audioUrl.split('/').pop()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Konten soal..." rows={3} className="bg-foreground/5 border border-foreground/10 rounded-xl py-2.5 px-4 text-sm resize-none" />
             <div className="grid grid-cols-2 gap-3">
               {['a', 'b', 'c', 'd'].map(k => (

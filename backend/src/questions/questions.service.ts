@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from '../entities/question.entity';
 import { Passage } from '../entities/passage.entity';
+import { Audio } from '../entities/audio.entity';
 import * as ExcelJS from 'exceljs';
 
 @Injectable()
@@ -12,6 +13,8 @@ export class QuestionsService {
     private questionRepository: Repository<Question>,
     @InjectRepository(Passage)
     private passageRepository: Repository<Passage>,
+    @InjectRepository(Audio)
+    private audioRepository: Repository<Audio>,
   ) {}
 
   async findAll(): Promise<Question[]> {
@@ -22,13 +25,37 @@ export class QuestionsService {
     return this.questionRepository.findOne({ where: { id }, relations: { passage: true, audio: true } });
   }
 
-  async create(data: Partial<Question>): Promise<Question> {
-    const question = this.questionRepository.create(data);
+  async create(data: Partial<Question & { audioUrl?: string }>): Promise<Question> {
+    const { audioUrl, ...questionData } = data;
+    const question = this.questionRepository.create(questionData);
+    
+    if (audioUrl) {
+      const audio = this.audioRepository.create({ fileUrl: audioUrl });
+      const savedAudio = await this.audioRepository.save(audio);
+      question.audio = savedAudio;
+      question.audioId = savedAudio.id;
+    }
+    
     return this.questionRepository.save(question);
   }
 
-  async update(id: string, data: Partial<Question>): Promise<Question | null> {
-    await this.questionRepository.update(id, data);
+  async update(id: string, data: Partial<Question & { audioUrl?: string }>): Promise<Question | null> {
+    const { audioUrl, ...questionData } = data;
+    const existing = await this.findOne(id);
+    if (!existing) return null;
+    
+    if (audioUrl) {
+      if (existing.audio) {
+        existing.audio.fileUrl = audioUrl;
+        await this.audioRepository.save(existing.audio);
+      } else {
+        const audio = this.audioRepository.create({ fileUrl: audioUrl });
+        const savedAudio = await this.audioRepository.save(audio);
+        questionData.audioId = savedAudio.id;
+      }
+    }
+    
+    await this.questionRepository.update(id, questionData);
     return this.findOne(id);
   }
 

@@ -539,7 +539,21 @@ export default function ExamPage() {
                     </div>
                     <button
                       disabled={audioPlayed[currentQ.id]}
-                      onClick={() => setAudioPlayed(prev => ({ ...prev, [currentQ.id]: true }))}
+                      onClick={() => {
+                        setAudioPlayed(prev => ({ ...prev, [currentQ.id]: true }));
+                        if ((currentQ as any).audio?.fileUrl) {
+                          const audioUrl = (currentQ as any).audio.fileUrl.startsWith('http')
+                            ? (currentQ as any).audio.fileUrl
+                            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${(currentQ as any).audio.fileUrl}`;
+                          const audio = new Audio(audioUrl);
+                          audio.play().catch(err => {
+                            console.error("Audio play failed:", err);
+                            alert("Gagal memutar audio soal. Pastikan file audio valid.");
+                          });
+                        } else {
+                          alert("Soal Listening ini tidak memiliki berkas audio.");
+                        }
+                      }}
                       className={`px-4 py-2 rounded-lg text-sm font-medium ${audioPlayed[currentQ.id] ? 'bg-foreground/10 text-foreground/40 cursor-not-allowed' : 'bg-blue-500 text-white'}`}>
                       {audioPlayed[currentQ.id] ? 'Sudah Diputar' : 'Putar Audio'}
                     </button>

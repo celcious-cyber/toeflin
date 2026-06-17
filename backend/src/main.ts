@@ -5,10 +5,14 @@ import { TestPackagesService } from './test-packages/test-packages.service';
 import { QuestionsService } from './questions/questions.service';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from './entities/user.entity';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
+
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ── Seed Admin User ──
   const usersService = app.get(UsersService);
