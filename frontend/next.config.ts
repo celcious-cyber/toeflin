@@ -10,7 +10,6 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  turbopack: {},
   typescript: {
     ignoreBuildErrors: true,
   },
