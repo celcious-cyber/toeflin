@@ -26,6 +26,11 @@ export class TestEngineController {
     return this.testEngineService.requestAttempt(body.userId, body.packageId);
   }
 
+  @Get('attempts/user/:userId')
+  getUserAttempts(@Param('userId') userId: string) {
+    return this.testEngineService.getUserAttempts(userId);
+  }
+
   @Get('requests')
   getRequests() {
     return this.testEngineService.getRequests();

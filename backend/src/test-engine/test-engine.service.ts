@@ -148,6 +148,14 @@ export class TestEngineService {
     return attempt;
   }
 
+  async getUserAttempts(userId: string) {
+    return this.attemptRepo.find({
+      where: { userId },
+      relations: { testPackage: true },
+      order: { date: 'DESC' },
+    });
+  }
+
   async requestAttempt(userId: string, packageId: string) {
     const existingReq = await this.reqRepo.findOne({
       where: { userId, packageId, status: RequestStatus.PENDING },
