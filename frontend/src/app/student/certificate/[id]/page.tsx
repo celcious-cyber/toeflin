@@ -21,7 +21,7 @@ export default function CertificatePage() {
         if (uStr) setUser(JSON.parse(uStr));
 
         // For now, let's mock the data for demonstration based on the ID
-        // In reality, you'd do: fetch(`http://localhost:3001/test-engine/${attemptId}`)
+        // In reality, you'd do: fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/${attemptId}`)
         setTimeout(() => {
           setAttempt({
             id: attemptId,

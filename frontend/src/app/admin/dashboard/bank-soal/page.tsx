@@ -24,14 +24,14 @@ export default function BankSoalPage() {
   });
 
   const fetchQuestions = async () => {
-    const res = await fetch('http://localhost:3001/questions');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`);
     if (res.ok) setQuestions(await res.json());
   };
 
   useEffect(() => { fetchQuestions(); }, []);
 
   const handleAdd = async () => {
-    const res = await fetch('http://localhost:3001/questions', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
     });
@@ -39,7 +39,7 @@ export default function BankSoalPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`http://localhost:3001/questions/${id}`, { method: 'DELETE' });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/${id}`, { method: 'DELETE' });
     fetchQuestions();
   };
 
@@ -48,7 +48,7 @@ export default function BankSoalPage() {
     if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('http://localhost:3001/questions/import', { method: 'POST', body: fd });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions/import`, { method: 'POST', body: fd });
     if (res.ok) {
       const data = await res.json();
       setImportMsg(`Berhasil import ${data.importedCount} soal!`);

@@ -100,7 +100,7 @@ export default function ExamPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       // Fetch questions
-      const qRes = await fetch('http://localhost:3001/questions');
+      const qRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/questions`);
       if (qRes.ok) {
         const allQuestions = await qRes.json();
         // Sort questions by TOEFL section order
@@ -140,7 +140,7 @@ export default function ExamPage() {
       }
       const user = JSON.parse(userStr);
 
-      const startRes = await fetch('http://localhost:3001/test-engine/start', {
+      const startRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/start`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, packageId })
       });
@@ -185,7 +185,7 @@ export default function ExamPage() {
       const user = userStr ? JSON.parse(userStr) : null;
       if (!user) return;
 
-      const res = await fetch('http://localhost:3001/test-engine/request-attempt', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/request-attempt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, packageId })
@@ -220,7 +220,7 @@ export default function ExamPage() {
   useEffect(() => {
     if (!attemptId || submitted) return;
     const t = setInterval(() => {
-      fetch(`http://localhost:3001/test-engine/${attemptId}/save`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/${attemptId}/save`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers, durationSeconds: 120 * 60 - timeLeft })
       });
@@ -237,7 +237,7 @@ export default function ExamPage() {
 
   const handleSubmit = async () => {
     if (!attemptId) return;
-    const res = await fetch(`http://localhost:3001/test-engine/${attemptId}/submit`, { method: 'POST' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/${attemptId}/submit`, { method: 'POST' });
     if (res.ok) {
       setResult(await res.json());
       setSubmitted(true);

@@ -16,14 +16,14 @@ export default function PaketTesPage() {
   const [form, setForm] = useState({ name: '', type: 'Full Test', sections: ['Listening', 'Structure', 'Reading'], description: '' });
 
   const fetchPkgs = async () => {
-    const res = await fetch('http://localhost:3001/test-packages');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-packages`);
     if (res.ok) setPackages(await res.json());
   };
 
   useEffect(() => { fetchPkgs(); }, []);
 
   const handleAdd = async () => {
-    const res = await fetch('http://localhost:3001/test-packages', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-packages`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
     });
@@ -31,7 +31,7 @@ export default function PaketTesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`http://localhost:3001/test-packages/${id}`, { method: 'DELETE' });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-packages/${id}`, { method: 'DELETE' });
     fetchPkgs();
   };
 

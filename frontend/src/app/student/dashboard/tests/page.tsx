@@ -15,7 +15,7 @@ export default function TestsPage() {
   const [packages, setPackages] = useState<TestPackage[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/test-packages')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-packages`)
       .then(r => r.json())
       .then(setPackages)
       .catch(() => {});

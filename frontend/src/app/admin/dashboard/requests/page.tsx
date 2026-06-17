@@ -8,7 +8,7 @@ export default function AdminRequestsPage() {
 
   const fetchRequests = async () => {
     try {
-      const res = await fetch('http://localhost:3001/test-engine/requests');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/requests`);
       if (res.ok) {
         const data = await res.json();
         setRequests(data);
@@ -26,7 +26,7 @@ export default function AdminRequestsPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/test-engine/requests/${id}/status`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/test-engine/requests/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
